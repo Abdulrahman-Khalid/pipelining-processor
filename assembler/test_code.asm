@@ -1,4 +1,11 @@
-ldd r1, fffff 
+
+.org 2 
+100 # this interupt address
+
+.org 100
+rti # interupt logic
+
+ldd r1, fffff
 std r0, fffff
 ldm r0, ffff
 iadd r0, r1, ffff
