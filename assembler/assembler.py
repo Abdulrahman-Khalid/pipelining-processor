@@ -14,7 +14,6 @@ def over_write_memory(memoryTuples, ramFilePath):
     outputMemFile = open(ramFilePath, "r+")
     data = outputMemFile.readlines()
     outputMemFile.seek(0)
-
     if(len(data) > memoryStartIndex):
         lineLength = len(data[memoryStartIndex])
         for instructionAddress, opCode in memoryTuples:
@@ -45,9 +44,9 @@ def load_codes():
 
 
 def check_syntax_error(instructionAddress, instruction, debugLines, instructionNum, instructions):
-    org = r"(^\.[oO][rR][gG]\s{0,1}[0-9a-fA-F]+$)"
-    word = r"(^\.[wW][oO][rR][dD]\s{0,1}[0-9a-fA-F]+$)"
-    hexaNum = r"(^\s{0,1}[0-9a-fA-F]+$)"
+    org = r"(^\.[oO][rR][gG]\s([0-7]([0-9a-fA-F]{1,2})|([0-9a-fA-F]{1,2}))\s{0,1}$)"
+    word = r"(^\.[wW][oO][rR][dD]\s[0-9a-fA-F]+$)"
+    hexaNum = r"(^[0-9a-fA-F]+$)"
     # ldd std r0, 0 to fffff (2 instruction) # 32 bit
     ldd_std_op = r"(^([lL][dD][dD]|[sS][tT][dD])\s[rR][0-7]\s{0,1},\s{0,1}[0-9a-fA-F]{1,5}$)"
     # ldm r0, 0 to ffff (1 instruction) # 32 bit
@@ -63,72 +62,72 @@ def check_syntax_error(instructionAddress, instruction, debugLines, instructionN
     # pop push jmp jz call not inc dec out in r0 (10 instruction) # 16 bit
     one_operand = r"(^([pP][oO][pP]|[pP][uU][sS][hH]|[jJ][mM][pP]|[jJ][zZ]|[cC][aA][lL][lL]|[nN][oO][tT]|[iI][nN][cC]|[dD][eE][cC]|[oO][uU][tT]|[iI][nN])\s[rR][0-7])"
     # nop rti ret (3 instruction) # 16 bit
-    nop_rti_ret = r"(^([nN][oO][pP]|[rR][tT][iI]|[rR][eE][tT])\s{0,1}$)"
+    no_operand = r"(^([nN][oO][pP]|[rR][tT][iI]|[rR][eE][tT]|[hH][lL][tT])\s{0,1}$)"
     # setC clrC setZ clrZ setN clrN # 16 bit
     set_clr = r"(^([sS][eE][tT]|[cC][lL][rR])[cCzZnN]\s{0,1}$)"
     org = r"(^\.[oO][rR][gG]\s{0,1}[0-7][0-9a-fA-F]|[0-9a-fA-F]{1,2}\s{0,1}$)"
     newAddress = instructionAddress + 1
-    instruction = instruction.lower()
-    if len(instruction.split()) == 3:  # correct
-        first, second, third = instruction.split()
-        if re.match(word, second+third, flags=0):
-            code = bin(int(third, bitsNum))[2:].zfill(bitsNum)
-            if(len(code) == bitsNum):
-                variables[first.lower()] = instructionAddress
-                debugLines.append(
-                    (instruction, "hex", instructionAddress, code))
-                return newAddress
-            else:
-                raise ValueError('Syntax Error: ', instruction)
     if re.match(org, instruction, flags=0):  # correct
         newAddress = int((instruction.split())[1], bitsNum)
     elif re.match(hexaNum, instruction, flags=0):
         code = bin(int(instruction, bitsNum))[2:].zfill(bitsNum)
         if(len(code) == bitsNum):
-            debugLines.append((instruction, "hex", instructionAddress, code))
+            debugLines.append([instruction, "hex instruction", [
+                              instructionAddress], [code]])
         else:
             raise ValueError('Syntax Error: ', instruction)
-    elif re.match(nop_rti_ret, instruction, flags=0) or re.match(set_clr, instruction, flags=0):
+    elif re.match(no_operand, instruction, flags=0):
         code = opCodeDict[instruction]
-        code += "0"*(bitsNum-len(code))
-        debugLines.append(
-            (instruction, "nop instruction", instructionAddress, code))
+        if(bitsNum > len(code)):
+            code += "0"*(bitsNum-len(code))
+        debugLines.append([instruction, "no operand instruction", [
+                          instructionAddress], [code]])
+    elif re.match(set_clr, instruction, flags=0):
+        code = opCodeDict[instruction]
+        if(bitsNum > len(code)):
+            code += "0"*(bitsNum-len(code))
+        debugLines.append([instruction, "set or clr instruction", [
+                          instructionAddress], [code]])
     elif re.match(shift_op, instruction, flags=0):
         arrayOp = (instruction.replace(',', ' ')).split()
         op, Rsrc, imm = [x for x in arrayOp]
         code = opCodeDict[op]+opCodeDict[Rsrc]
         code += bin(int(imm, bitsNum))[2:].zfill(bitsNum-len(code))
-        code += "0"*(bitsNum-len(code))
-        debugLines.append(
-            (instruction, "shift instruction", instructionAddress, code))
+        if(bitsNum > len(code)):
+            code += "0"*(bitsNum-len(code))
+        debugLines.append([instruction, "shift  instruction", [
+                          instructionAddress], [code]])
     elif re.match(swap_op, instruction, flags=0):
         arrayOp = (instruction.replace(',', ' ')).split()
         op, Rsrc1, Rsrc2 = [x for x in arrayOp]
         code = opCodeDict[op]+opCodeDict[Rsrc1]+opCodeDict[Rsrc2]
-        code += "0"*(bitsNum-len(code))
-        debugLines.append(
-            (instruction, "swap instruction", instructionAddress, code))
+        if(bitsNum > len(code)):
+            code += "0"*(bitsNum-len(code))
+        debugLines.append([instruction, "swap operand instruction", [
+                          instructionAddress], [code]])
     elif re.match(three_operand, instruction, flags=0):
         arrayOp = (instruction.replace(',', ' ')).split()
         op, Rsrc1, Rsrc2, Rdst = [x for x in arrayOp]
         code = opCodeDict[op]+opCodeDict[Rsrc1] + \
             opCodeDict[Rsrc2]+opCodeDict[Rdst]
-        code += "0"*(bitsNum-len(code))
-        debugLines.append(
-            (instruction, "three operand instruction", instructionAddress, code))
+        if(bitsNum > len(code)):
+            code += "0"*(bitsNum-len(code))
+        debugLines.append([instruction, "three operand instruction", [
+                          instructionAddress], [code]])
     elif re.match(one_operand, instruction, flags=0):
         arrayOp = instruction.split()
         op, Rdst = [x for x in arrayOp]
         code = opCodeDict[op] + opCodeDict[Rdst]
-        code += "0"*(bitsNum-len(code))
-        debugLines.append(
-            (instruction, "one operand instruction", instructionAddress, code))
+        if(bitsNum > len(code)):
+            code += "0"*(bitsNum-len(code))
+        debugLines.append([instruction, "one operand instruction", [
+                          instructionAddress], [code]])
     elif re.match(ldd_std_op, instruction, flags=0):
         arrayOp = (instruction.replace(',', ' ')).split()
         op, R, EA = [x for x in arrayOp]
         code = opCodeDict[op]+opCodeDict[R]
         n = bitsNum-len(code)
-        code += bin(int(EA[0], n))[2:].zfill(n)
+        code += bin(int(EA[0], bitsNum))[2:].zfill(n)
         code += "0"*(bitsNum-len(code))
         instructionAddress2 = newAddress
         newAddress += 1
@@ -136,28 +135,41 @@ def check_syntax_error(instructionAddress, instruction, debugLines, instructionN
             code2 = bin(int(EA[1:], bitsNum))[2:].zfill(bitsNum)
         else:
             code2 = "0"*bitsNum
-        debugLines.append(
-            (instruction, "ldd or std instruction", instructionAddress, code))
+        debugLines.append([instruction, "ldd or std instruction", [
+                          instructionAddress, instructionAddress2], [code, code2]])
     elif re.match(ldm_op, instruction, flags=0):
         arrayOp = (instruction.replace(',', ' ')).split()
         op, R, imm = [x for x in arrayOp]
         code = opCodeDict[op]+opCodeDict[R]
-        code += "0"*(bitsNum-len(code))
+        if(bitsNum > len(code)):
+            code += "0"*(bitsNum-len(code))
         instructionAddress2 = newAddress
         newAddress += 1
         code2 = bin(int(imm, bitsNum))[2:].zfill(bitsNum)
-        debugLines.append(
-            (instruction, "ldm instruction", instructionAddress, code))
+        debugLines.append([instruction, "ldm instruction", [
+                          instructionAddress, instructionAddress2], [code, code2]])
     elif re.match(iadd_op, instruction, flags=0):
         arrayOp = (instruction.replace(',', ' ')).split()
         op, R1, R2, imm = [x for x in arrayOp]
         code = opCodeDict[op]+opCodeDict[R1]+opCodeDict[R2]
-        code += "0"*(bitsNum-len(code))
+        if(bitsNum > len(code)):
+            code += "0"*(bitsNum-len(code))
         instructionAddress2 = newAddress
         newAddress += 1
         code2 = bin(int(imm, bitsNum))[2:].zfill(bitsNum)
-        debugLines.append(
-            (instruction, "iadd instruction", instructionAddress, code))
+        debugLines.append([instruction, "iadd instruction", [
+                          instructionAddress, instructionAddress2], [code, code2]])
+    elif len(instruction.split()) == 3:
+        first, second, third = instruction.split()
+        if(re.match(word, second+third, flags=0)):
+            code = bin(int(third, bitsNum))[2:].zfill(bitsNum)
+            if(len(code) == bitsNum):
+                variables[first] = instructionAddress
+                debugLines.append([instruction, "variable instruction", [
+                                  instructionAddress], [code]])
+                return newAddress
+            else:
+                raise ValueError('Syntax Error: ', instruction)
     else:
         raise ValueError('Syntax Error: ', instruction)
     return newAddress
@@ -173,7 +185,6 @@ def compile_code(lines, debugFileDir):
     debug.writelines(
         "----------------------------- START CODE -----------------------------\n")
     # remove all white spaces and comments
-    debugLines = []
     instructionAddress = 0
     for lineNum, line in enumerate(lines):
         instruction = line.partition('#')[0]
@@ -184,6 +195,7 @@ def compile_code(lines, debugFileDir):
     # if there is no hlt at the end of the program just add it
     if(instructions[-1][1] != "hlt"):
         instructions.append((instructions[-1][0]+1, "hlt"))
+    debugLines = []
     for instructionNum, instructionTuple in enumerate(instructions):
         try:
             instructionAddress = check_syntax_error(
@@ -198,8 +210,12 @@ def compile_code(lines, debugFileDir):
     debug.writelines(
         "----------------------------- START INSTUCTION INFORMATION LIST -----------------------------\n")
     for debugLine in debugLines:
-        debug.writelines("(instruction = {}) (instruction type = {}) (address in hex = {}) (instruction code = {})\n".format(
-            debugLine[0], debugLine[1], hex(debugLine[2]).zfill(3), debugLine[3]))
+        if(len(debugLine[2]) == 2 and len(debugLine[3]) == 2):
+            debug.writelines("(instruction = {}) (instruction type = {}) two addresses in memory\n (1- address in hex = {} , 2- address in hex = {}) (instruction code = {} and {})\n".format(
+                debugLine[0], debugLine[1], hex(debugLine[2][0]).zfill(3), hex(debugLine[2][1]).zfill(3), debugLine[3][0], debugLine[3][1]))
+        else:
+            debug.writelines("(instruction = {}) (instruction type = {}) (address in hex = {}) (instruction code = {})\n".format(
+                debugLine[0], debugLine[1], hex(debugLine[2][0]).zfill(3), debugLine[3][0]))
     debug.writelines(
         "----------------------------- END INSTUCTION INFORMATION LIST -------------------------------\n")
     debug.close()
@@ -208,7 +224,9 @@ def compile_code(lines, debugFileDir):
     if(isFailed):
         print("Failed Compile")
         return False
-
     print("Successful Compile")
-    memoryTuples = [(x[-2], x[-1]) for x in debugLines]
+    memoryTuples = []
+    for line in debugLines:
+        for idx in range(len(line[-2])):
+            memoryTuples.append((line[-2][idx], line[-1][idx]))
     return memoryTuples
