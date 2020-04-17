@@ -30,7 +30,9 @@ def over_write_memory(memoryTuples, ramFilePath):
 
 def generate_empty_memory(memFile):
     with open(memFile, "w") as f:
-        for i in range(initMemAddr, toMemAddr):
+        for i in range(initMemAddr, initMemAddr+4):
+            f.writelines(hex(i)[2:].zfill(3)+": " + "0"*bitsNum+"\n")
+        for i in range(initMemAddr+4, toMemAddr):
             f.writelines(hex(i)[2:].zfill(3)+": " + "X"*bitsNum+"\n")
 
 
