@@ -64,10 +64,12 @@ def check_syntax_error(instructionAddress, instruction, debugLines, instructionN
     no_operand = r"(^([nN][oO][pP]|[rR][tT][iI]|[rR][eE][tT]|[hH][lL][tT])\s{0,1}$)"
     # setC clrC setZ clrZ setN clrN # 16 bit
     set_clr = r"(^([sS][eE][tT]|[cC][lL][rR])[cCzZnN]\s{0,1}$)"
-    org = r"(^\.[oO][rR][gG]\s{0,1}[0-7][0-9a-fA-F]|[0-9a-fA-F]{1,2}\s{0,1}$)"
+    org = r"(^\.[oO][rR][gG]\s{0,1}([0-7][0-9a-fA-F]{1,2}|[0-9a-fA-F]{1,2})\s{0,1}$)"
     newAddress = instructionAddress + 1
+    code = ""
     if re.match(org, instruction, flags=0):  # correct
         newAddress = int((instruction.split())[1], bitsNum)
+        code = "0"*bitsNum  # to avoid
     elif re.match(hexaNum, instruction, flags=0):
         code = bin(int(instruction, bitsNum))[2:].zfill(bitsNum)
         if(len(code) == bitsNum):
@@ -90,8 +92,9 @@ def check_syntax_error(instructionAddress, instruction, debugLines, instructionN
     elif re.match(shift_op, instruction, flags=0):
         arrayOp = (instruction.replace(',', ' ')).split()
         op, Rsrc, imm = [x for x in arrayOp]
+        numOfBitsOfImm = 5
         code = opCodeDict[op]+bin(int(imm, bitsNum)
-                                  )[2:].zfill(bitsNum-len(code))+(opCodeDict[Rsrc]*2)
+                                  )[2:].zfill(numOfBitsOfImm)+(opCodeDict[Rsrc]*2)
         if(bitsNum > len(code)):
             code += "0"*(bitsNum-len(code))
         debugLines.append([instruction, "shift  instruction", [
@@ -104,9 +107,9 @@ def check_syntax_error(instructionAddress, instruction, debugLines, instructionN
                           instructionAddress], [code]])
     elif re.match(three_operand, instruction, flags=0):
         arrayOp = (instruction.replace(',', ' ')).split()
-        op, Rsrc1, Rsrc2, Rdst = [x for x in arrayOp]
-        code = opCodeDict[op]+opCodeDict[Rsrc1] + \
-            opCodeDict[Rsrc2]+opCodeDict[Rdst]
+        op, R1, R2, R3 = [x for x in arrayOp]
+        code = opCodeDict[op]+opCodeDict[R1] + \
+            opCodeDict[R2]+opCodeDict[R3]
         debugLines.append([instruction, "three operand instruction", [
                           instructionAddress], [code]])
     elif re.match(one_operand, instruction, flags=0):
@@ -145,7 +148,7 @@ def check_syntax_error(instructionAddress, instruction, debugLines, instructionN
     elif re.match(iadd_op, instruction, flags=0):
         arrayOp = (instruction.replace(',', ' ')).split()
         op, R1, R2, imm = [x for x in arrayOp]
-        code = opCodeDict[op]+opCodeDict[R1]+opCodeDict[R2]
+        code = opCodeDict[op] + opCodeDict[R1] + opCodeDict[R2]
         instructionAddress2 = newAddress
         newAddress += 1
         code2 = bin(int(imm, bitsNum))[2:].zfill(bitsNum)
@@ -165,6 +168,7 @@ def check_syntax_error(instructionAddress, instruction, debugLines, instructionN
     else:
         raise ValueError('Syntax Error: ', instruction)
     if(len(code) != bitsNum):  # additional check
+        print(len(code))
         raise ValueError('Syntax Error: ', instruction)
     return newAddress
 
