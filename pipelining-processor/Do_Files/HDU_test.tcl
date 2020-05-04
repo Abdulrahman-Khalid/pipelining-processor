@@ -47,7 +47,7 @@ run 50
 set flush1 [examine -binary sim:/HDU/flush1]
 assert { $flush1 == 1 }
 
-force -freeze sim:/HDU/Rdst1_F_ID 5 0
+force -freeze sim:/HDU/Rdst2_F_ID 5 0
 force -freeze sim:/HDU/swap_CU 1 0
 force -freeze sim:/HDU/Branch_MEM 0 0
 run 50
@@ -77,6 +77,11 @@ force -freeze sim:/HDU/WB_ID_E 0 0
 force -freeze sim:/HDU/Branch_MEM 1 0
 force -freeze sim:/HDU/Rdst1_ID_E 7 0
 force -freeze sim:/HDU/Rdst2_ID_E 5 0
+force -freeze sim:/HDU/Rdst_MEM 5 0
+run 50
+set flush2 [examine -binary sim:/HDU/flush2]
+assert { $flush2 == 1 }
+
 force -freeze sim:/HDU/Rdst_MEM 7 0
 run 50
 set flush2 [examine -binary sim:/HDU/flush2]
@@ -84,12 +89,11 @@ assert { $flush2 == 1 }
 
 force -freeze sim:/HDU/WB_ID_E 1 0
 force -freeze sim:/HDU/swap_ID_E 0 0
-force -freeze sim:/HDU/Rdst_MEM 5 0
 run 50
 set flush2 [examine -binary sim:/HDU/flush2]
 assert { $flush2 == 1 }
 
-force -freeze sim:/HDU/Rdst1_ID_E 5 0
+force -freeze sim:/HDU/Rdst2_ID_E 5 0
 force -freeze sim:/HDU/swap_ID_E 1 0
 force -freeze sim:/HDU/Branch_MEM 0 0
 run 50

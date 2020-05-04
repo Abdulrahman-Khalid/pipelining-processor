@@ -29,9 +29,9 @@ end entity;
 architecture HDU_Arch of HDU is
     signal flush1, flush2, flush3: std_logic;
     begin
-        flush1 <= '1' when ((swap_CU = '1' and (Rdst1_F_ID = Rdst_MEM or Rdst2_F_ID = Rdst_MEM)) or (WB_CU = '1' and Rdst1_F_ID = Rdst_MEM)) and Branch_MEM = '1' else '0';
+        flush1 <= '1' when ((swap_CU = '1' and Rdst2_F_ID = Rdst_MEM) or ((WB_CU = '1' or swap_CU = '1') and Rdst1_F_ID = Rdst_MEM)) and Branch_MEM = '1' else '0';
 
-        flush2 <= '1' when ((swap_ID_E = '1' and (Rdst1_ID_E = Rdst_MEM or Rdst2_ID_E = Rdst_MEM)) or (WB_ID_E = '1' and Rdst1_ID_E = Rdst_MEM)) and Branch_MEM = '1' else '0';
+        flush2 <= '1' when ((swap_ID_E = '1' and Rdst2_ID_E = Rdst_MEM) or ((WB_ID_E = '1' or swap_ID_E = '1') and Rdst1_ID_E = Rdst_MEM)) and Branch_MEM = '1' else '0';
         
         flush3 <= '1' when load_E_MEM = '1' and Branch_MEM = '1' and WB_E_MEM = '1' and (Rdst_E_MEM = Rdst_MEM) else '0';
         
