@@ -16,5 +16,5 @@ architecture HDU_Arch of alu is
     begin
         insert_bubble <= '0';
         flush <= '0';
-        hazard_detected <= (insert_bubble and flush);
+        hazard_detected <= (insert_bubble or flush);
 end architecture;
