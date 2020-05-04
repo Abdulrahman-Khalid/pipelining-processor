@@ -1,6 +1,6 @@
-library IEEE;
-use IEEE.std_logic_1164.all;
-USE IEEE.numeric_std.all;
+library ieee;
+use ieee.std_logic_1164.all;
+use ieee.numeric_std.all;
 USE work.constants.all;
 
 --operation codes
@@ -19,8 +19,7 @@ USE work.constants.all;
 
 entity ALU is
     generic(n: integer := 32; m: integer := 5);
-    port(
-        operationControl: in std_logic_vector(m-1 downto 0);
+    port(operationControl: in std_logic_vector(m-1 downto 0);
         A, B: in std_logic_vector(n-1 downto 0);
         F: out std_logic_vector(n-1 downto 0);
         flagIn: in std_logic_vector(flagsCount-1 downto 0);
