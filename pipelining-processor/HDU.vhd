@@ -12,10 +12,10 @@ entity HDU is
 end entity;
 
 architecture HDU_Arch of alu is
-    
+    signal flush1, flush2, flush3: std_logic;
     begin
-        insert_bubble <= '1' when ((Rsrc1_F_ID = Rdst1_F_ID or Rsrc1_F_ID = Rdst1_F_ID) 
-                                and load_ID_E = '1') else '0';
-        flush <= '0';
         hazard_detected <= (insert_bubble or flush);
+        insert_bubble <= '1' when ((Rsrc1_F_ID = Rdst1_F_ID or Rsrc1_F_ID = Rdst1_F_ID) 
+                                and load_ID_E = '1') else '0'; -- load use case
+        flush <= (flush1 or flush2 or flush3);
 end architecture;
