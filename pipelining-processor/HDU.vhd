@@ -13,7 +13,7 @@ entity HDU is
         insert_bubble, flush, hazard_detected: out std_logic;
 end entity;
 
-architecture HDU_Arch of alu is
+architecture HDU_Arch of HDU is
     signal flush1, flush2, flush3: std_logic;
     begin
         hazard_detected <= (insert_bubble or flush);

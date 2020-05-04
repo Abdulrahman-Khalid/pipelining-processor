@@ -17,7 +17,7 @@ USE work.constants.all;
     -- SHL shift left A by B times
     -- SHR shift right A by B times
 
-entity alu is
+entity ALU is
     generic(n: integer := 32; m: integer := 5);
     port(
         operationControl: in std_logic_vector(m-1 downto 0);
@@ -27,7 +27,7 @@ entity alu is
         flagOut: out std_logic_vector(flagsCount-1 downto 0));
 end entity;
 
-architecture aluArch of alu is
+architecture ALU_Arch of ALU is
     signal sigB, sigF, subTowsCompB: std_logic_vector(n-1 downto 0);
     signal arthimatic, logical, shift, arth_logic_shift, carryIn, carryOut, shiftCarry: std_logic;
     signal FTemp: std_logic_vector(n-1 downto 0);
