@@ -28,6 +28,7 @@ assert { $insert_bubble == 0 }
 #--------------------------------- Flush1 signal test cases --------------------------------
 force -freeze sim:/HDU/swap_F_ID 1 0
 force -freeze sim:/HDU/WB_CU 0 0
+force -freeze sim:/HDU/Branch_MEM 1 0
 force -freeze sim:/HDU/Rdst1_F_ID 7 0
 force -freeze sim:/HDU/Rdst2_F_ID 5 0
 force -freeze sim:/HDU/Rdst_MEM 7 0
@@ -44,9 +45,15 @@ assert { $flush1 == 1 }
 
 force -freeze sim:/HDU/Rdst1_F_ID 5 0
 force -freeze sim:/HDU/swap_F_ID 1 0
+force -freeze sim:/HDU/Branch_MEM 0 0
 run 100
 set flush1 [examine -binary sim:/HDU/flush1]
-assert { $flush1 == 1 }
+assert { $flush1 == 0 }
+
+force -freeze sim:/HDU/Branch_MEM 1 0
+run 100
+set flush1 [examine -binary sim:/HDU/flush1]
+assert { $flush1 == 0 }
 
 force -freeze sim:/HDU/Rdst_MEM 2 0
 run 100
