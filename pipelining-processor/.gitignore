@@ -1,6 +1,7 @@
 *
 */
 !/Do_Files/
+!/Do_Files/*
 !.gitignore
 !*.vhd
 !readme.md
