@@ -137,30 +137,27 @@ force -freeze sim:/HDU/flush3 0 0
 run 50
 set flush [examine -binary sim:/HDU/flush]
 assert { $flush == 0 }
+
 force -freeze sim:/HDU/flush1 1 0
 force -freeze sim:/HDU/flush2 0 0
 force -freeze sim:/HDU/flush3 0 0
 run 50
 set flush [examine -binary sim:/HDU/flush]
 assert { $flush == 1 }
+
 force -freeze sim:/HDU/flush1 0 0
 force -freeze sim:/HDU/flush2 1 0
 force -freeze sim:/HDU/flush3 0 0
 run 50
 set flush [examine -binary sim:/HDU/flush]
 assert { $flush == 1 }
+
 force -freeze sim:/HDU/flush1 0 0
 force -freeze sim:/HDU/flush2 0 0
 force -freeze sim:/HDU/flush3 1 0
 run 50
 set flush [examine -binary sim:/HDU/flush]
 assert { $flush == 1 }
-
-force -freeze sim:/HDU/Rdst_MEM 7 0
-force -freeze sim:/HDU/WB_E_MEM 0 0
-run 50
-set flush3 [examine -binary sim:/HDU/flush3]
-assert { $flush3 == 0 }
 
 force -freeze sim:/HDU/flush1 1 0
 force -freeze sim:/HDU/flush2 1 0
@@ -169,3 +166,28 @@ run 50
 set flush [examine -binary sim:/HDU/flush]
 assert { $flush == 1 }
 #--------------------------------- END Flush test cases ------------------------------
+#--------------------------------- Hazard_Detected test cases ------------------------
+force -freeze sim:/HDU/flush 0 0
+force -freeze sim:/HDU/insert_bubble 0 0
+run 50
+set hazard_detected [examine -binary sim:/HDU/hazard_detected]
+assert { $hazard_detected == 0 }
+
+force -freeze sim:/HDU/flush 1 0
+force -freeze sim:/HDU/insert_bubble 0 0
+run 50
+set hazard_detected [examine -binary sim:/HDU/hazard_detected]
+assert { $hazard_detected == 1 }
+
+force -freeze sim:/HDU/flush 0 0
+force -freeze sim:/HDU/insert_bubble 1 0
+run 50
+set hazard_detected [examine -binary sim:/HDU/hazard_detected]
+assert { $hazard_detected == 1 }
+
+force -freeze sim:/HDU/flush 1 0
+force -freeze sim:/HDU/insert_bubble 1 0
+run 50
+set hazard_detected [examine -binary sim:/HDU/hazard_detected]
+assert { $hazard_detected == 1 }
+#--------------------------------- Hazard_Detected test cases -------------------------
