@@ -53,7 +53,7 @@ assert { $flush1 == 0 }
 force -freeze sim:/HDU/Branch_MEM 1 0
 run 50
 set flush1 [examine -binary sim:/HDU/flush1]
-assert { $flush1 == 0 }
+assert { $flush1 == 1 }
 
 force -freeze sim:/HDU/Rdst_MEM 2 0
 run 50
@@ -95,7 +95,7 @@ assert { $flush2 == 0 }
 force -freeze sim:/HDU/Branch_MEM 1 0
 run 50
 set flush2 [examine -binary sim:/HDU/flush2]
-assert { $flush2 == 0 }
+assert { $flush2 == 1 }
 
 force -freeze sim:/HDU/Rdst_MEM 2 0
 run 50
