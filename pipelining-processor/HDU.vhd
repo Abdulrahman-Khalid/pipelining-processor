@@ -29,4 +29,6 @@ architecture HDU_Arch of alu is
                 or (WB_ID_E = '1' and Rdst2_ID_E = Rdst_MEM)) 
                 and (Branch_MEM = '1'));
         
+        flush3 <= load_E_MEM = '1' and Branch_MEM = '1' and WB_E_MEM = '1' and (Rdst_E_MEM = Rdst_MEM);
+        
 end architecture;
