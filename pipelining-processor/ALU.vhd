@@ -59,26 +59,19 @@ architecture ALU_Arch of ALU is
                           or operationControl = OperationSHR) else '0';
         arth_logic_shift <= '1' when (arthimatic = '1' or logical = '1' or shift = '1') else '0';
 
-        shiftTemp <= ('0' & B) when operationControl = OperationSHL
-        else (B & '0') when operationControl = OperationSHR else (others => '0');
-
-        shiftResult <= shift_left(unsigned(shiftTemp), to_integer(unsigned(B))) when operationControl = OperationSHL
-        else shift_right(unsigned(shiftTemp), to_integer(unsigned(B))) when operationControl = OperationSHR
-        else (others => '0');
-
         FTemp <= sigF when arthimatic = '1'
         else (A and B) when operationControl = OperationAND
         else (A or B) when operationControl = OperationOR
         else not(A) when operationControl = OperationNOT
-        else shiftResult(n-1 downto 0) when operationControl = OperationSHL
-        else shiftResult(n downto 1) when operationControl = OperationSHR
+        else A(n - 1 - TO_INTEGER(UNSIGNED(B)) downto 0) & (TO_INTEGER(UNSIGNED(B))-1 downto 0 => '0')  when operationControl = OperationSHL and B /= ZEROS
+        else (TO_INTEGER(UNSIGNED(B))-1 downto 0 => '0') & A(n - 1 downto TO_INTEGER(UNSIGNED(B)))  when operationControl = OperationSHR and B /= ZEROS
         else A; -- A when (operationControl = OperationNOP) or other operations
         
         --carry flag
         -- if (operationControl = OperationNOP) or other operations flags don't change
         flagOut(cFlag) <= carryOut  when arthimatic = '1'
-        else shiftResult(n) when operationControl = OperationSHL 
-        else shiftResult(0) when operationControl = OperationSHR 
+        else A(TO_INTEGER(UNSIGNED(B))-1) when operationControl = OperationSHL and B /= ZEROS 
+        else A(n-TO_INTEGER(UNSIGNED(B))) when operationControl = OperationSHR and B /= ZEROS 
         else flagIn(cFlag); 
 
         --zero flag
