@@ -25,10 +25,10 @@ entity alu is
         F: out std_logic_vector(n-1 downto 0);
         flagIn: in std_logic_vector(flagsCount-1 downto 0);
         flagOut: out std_logic_vector(flagsCount-1 downto 0));
-end entity alu;
+end entity;
 
 architecture aluArch of alu is
-    signal sigA, sigB, sigF, subTowsCompB: std_logic_vector(n-1 downto 0);
+    signal sigB, sigF, subTowsCompB: std_logic_vector(n-1 downto 0);
     signal arthimatic, logical, shift, arth_logic_shift, carryIn, carryOut, shiftCarry: std_logic;
     signal FTemp: std_logic_vector(n-1 downto 0);
     signal shiftTemp, shiftResult: std_logic_vector(n downto 0);
