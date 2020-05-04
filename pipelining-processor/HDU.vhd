@@ -20,4 +20,7 @@ architecture HDU_Arch of alu is
         insert_bubble <= '1' when ((Rsrc1_F_ID = Rdst1_F_ID or Rsrc1_F_ID = Rdst1_F_ID) 
                                 and load_ID_E = '1') else '0'; -- load use case
         flush <= (flush1 or flush2 or flush3);
+        flush2 <= (((swap_ID_E = '1' and Rdst1_ID_E = Rdst_MEM) 
+                or (WB_ID_E = '1' and Rdst2_ID_E = Rdst_MEM)) 
+                and (Branch_MEM = '1'));
 end architecture;
