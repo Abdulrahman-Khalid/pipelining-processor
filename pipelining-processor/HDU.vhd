@@ -19,7 +19,7 @@ architecture HDU_Arch of HDU is
         hazard_detected <= (insert_bubble ='1' or flush = '1');
         insert_bubble <= '1' when ((Rsrc1_F_ID = Rdst1_F_ID or Rsrc1_F_ID = Rdst1_F_ID) 
                                 and load_ID_E = '1') else '0'; -- load use case
-        flush <= (flush1 or flush2 or flush3);
+        flush <= (flush1 = '1' or flush2 = '1' or flush3 = '1');
 
         flush1 <= (((swap_F_ID = '1' and Rdst1_F_ID = Rdst_MEM) 
                 or (WB_CU = '1' and Rdst2_F_ID = Rdst_MEM)) 
