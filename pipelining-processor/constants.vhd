@@ -30,7 +30,7 @@ package constants is
     constant OperationSUB: std_logic_vector(4 downto 0) :=  "00101";
     constant OperationAND: std_logic_vector(4 downto 0) :=  "00110";
     constant OperationOR: std_logic_vector(4 downto 0) :=  "00111";
-    constant OperationSHL: std_logic_vector(4 downto 0) :=  "01001";
+    constant OperationSHL: std_logic_vector(4 downto 0) :=  "01000";
     constant OperationSHR: std_logic_vector(4 downto 0) :=  "01001";
     constant OperationIADD: std_logic_vector(4 downto 0) :=  "01010";
     --flags 

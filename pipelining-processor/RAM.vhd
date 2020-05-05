@@ -4,7 +4,7 @@ USE IEEE.numeric_std.all;
 use STD.TEXTIO.all;
 
 ENTITY RAM IS
-	GENERIC (wordSize : integer := 16; addressWidth: integer := 12; RAMSize: integer := 4096);
+	GENERIC (wordSize : integer := 16; addressWidth: integer := 11; RAMSize: integer := 2048);
 	PORT(	
 		W  : IN std_logic;
 		R  : IN std_logic;
@@ -30,7 +30,7 @@ ARCHITECTURE RAM_arch OF RAM IS
 		 file_open(RAMFile, "out.mem",  read_mode);
 		 count := 0;
   		 WHILE not ENDFILE(RAMFile) LOOP
-     			readline(RAMFile, textLine);
+			readline(RAMFile, textLine);
 			read(textLine, c);
 			read(textLine, c);
 			read(textLine, c);
