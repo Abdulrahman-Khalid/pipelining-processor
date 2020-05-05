@@ -65,12 +65,12 @@ architecture ALU_Arch of ALU is
         else A(n - 1 - TO_INTEGER(UNSIGNED(B)) downto 0) & (TO_INTEGER(UNSIGNED(B))-1 downto 0 => '0')  when operationControl = OperationSHL and B /= ZEROS
         else (TO_INTEGER(UNSIGNED(B))-1 downto 0 => '0') & A(n - 1 downto TO_INTEGER(UNSIGNED(B)))  when operationControl = OperationSHR and B /= ZEROS
         else A; -- A when (operationControl = OperationNOP) or other operations
-        
+
         --carry flag
         -- if (operationControl = OperationNOP) or other operations flags don't change
         flagOut(cFlag) <= carryOut  when arthimatic = '1'
-        else A(TO_INTEGER(UNSIGNED(B))-1) when operationControl = OperationSHL and B /= ZEROS 
-        else A(n-TO_INTEGER(UNSIGNED(B))) when operationControl = OperationSHR and B /= ZEROS 
+        else A(n-TO_INTEGER(UNSIGNED(B))) when operationControl = OperationSHL and B /= ZEROS 
+        else A(TO_INTEGER(UNSIGNED(B))-1) when operationControl = OperationSHR and B /= ZEROS 
         else flagIn(cFlag); 
 
         --zero flag
