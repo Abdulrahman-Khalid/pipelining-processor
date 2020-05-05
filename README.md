@@ -1,4 +1,4 @@
-# Assembler
+# 5-Stage Pipe Lining processor
 ### How To Use:
 1. Open the assembler folder 
 ``` bash
