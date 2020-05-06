@@ -105,6 +105,220 @@ PORT( 		Clk,Rst,wb_signal,swap_signal : IN std_logic;
 );
 END COMPONENT;
 
+-- Define buffers
+
+COMPONENT FD_buffer IS
+PORT( Clk,Reset, Enable, Flush : IN std_logic;
+	    d_instruction : IN std_logic_vector(15 DOWNTO 0);
+	    q_instruction : OUT std_logic_vector(15 DOWNTO 0);
+
+	    d_not_taken_address : IN std_logic_vector(31 DOWNTO 0);
+	    q_not_taken_address : OUT std_logic_vector(31 DOWNTO 0);
+
+	    d_predicted_state : IN std_logic_vector(1 DOWNTO 0);
+	    q_predicted_state : OUT std_logic_vector(1 DOWNTO 0);
+
+	    d_state_address : IN std_logic_vector(1 DOWNTO 0);
+	    q_state_address : OUT std_logic_vector(1 DOWNTO 0)
+);
+	
+END COMPONENT;
+
+COMPONENT DE_buffer IS
+PORT( Clk,Reset : IN std_logic;
+	    d_WB_signals : IN std_logic_vector(4 DOWNTO 0);
+	    q_WB_signals : OUT std_logic_vector(4 DOWNTO 0);
+
+	    d_memory_signals : IN std_logic_vector(6 DOWNTO 0);
+	    q_memory_signals : OUT std_logic_vector(6 DOWNTO 0);
+
+	    d_excute_signals : IN std_logic_vector(8 DOWNTO 0);
+	    q_excute_signals : OUT std_logic_vector(8 DOWNTO 0);
+
+	    d_data1 : IN std_logic_vector(31 DOWNTO 0);
+	    q_data1 : OUT std_logic_vector(31 DOWNTO 0);
+
+	    d_data2 : IN std_logic_vector(31 DOWNTO 0);
+	    q_data2 : OUT std_logic_vector(31 DOWNTO 0);
+
+	    d_Rsrc1 : IN std_logic_vector(2 DOWNTO 0);
+	    q_Rsrc1 : OUT std_logic_vector(2 DOWNTO 0);
+
+	    d_Rsrc2 : IN std_logic_vector(2 DOWNTO 0);
+	    q_Rsrc2 : OUT std_logic_vector(2 DOWNTO 0);
+
+	    d_Rdst1 : IN std_logic_vector(2 DOWNTO 0);
+	    q_Rdst1 : OUT std_logic_vector(2 DOWNTO 0);
+
+	    d_Rdst2 : IN std_logic_vector(2 DOWNTO 0);
+	    q_Rdst2 : OUT std_logic_vector(2 DOWNTO 0)
+);
+	
+END COMPONENT;
+
+COMPONENT EM_buffer IS
+PORT( Clk,Reset : IN std_logic;
+	    d_WB_signals : IN std_logic_vector(4 DOWNTO 0);
+	    q_WB_signals : OUT std_logic_vector(4 DOWNTO 0);
+
+	    d_memory_signals : IN std_logic_vector(6 DOWNTO 0);
+	    q_memory_signals : OUT std_logic_vector(6 DOWNTO 0);
+
+	    d_data1 : IN std_logic_vector(31 DOWNTO 0);
+	    q_data1 : OUT std_logic_vector(31 DOWNTO 0);
+
+	    d_data2 : IN std_logic_vector(31 DOWNTO 0);
+	    q_data2 : OUT std_logic_vector(31 DOWNTO 0);
+
+	    d_Rdst1 : IN std_logic_vector(2 DOWNTO 0);
+	    q_Rdst1 : OUT std_logic_vector(2 DOWNTO 0);
+
+	    d_Rdst2 : IN std_logic_vector(2 DOWNTO 0);
+	    q_Rdst2 : OUT std_logic_vector(2 DOWNTO 0)
+);
+	
+END COMPONENT;
+
+COMPONENT MW_buffer IS
+PORT( Clk,Reset : IN std_logic;
+	    d_WB_signals : IN std_logic_vector(4 DOWNTO 0);
+	    q_WB_signals : OUT std_logic_vector(4 DOWNTO 0);
+
+	    d_data1 : IN std_logic_vector(31 DOWNTO 0);
+	    q_data1 : OUT std_logic_vector(31 DOWNTO 0);
+
+	    d_data2 : IN std_logic_vector(31 DOWNTO 0);
+	    q_data2 : OUT std_logic_vector(31 DOWNTO 0);
+
+	    d_Rdst1 : IN std_logic_vector(2 DOWNTO 0);
+	    q_Rdst1 : OUT std_logic_vector(2 DOWNTO 0);
+
+	    d_Rdst2 : IN std_logic_vector(2 DOWNTO 0);
+	    q_Rdst2 : OUT std_logic_vector(2 DOWNTO 0)
+);
+	
+END COMPONENT;
+
+--Define forwarding unit
+
+COMPONENT forwarding_unit IS
+PORT( 
+	EM_Rdst1 : IN std_logic_vector(2 DOWNTO 0);
+	EM_Rdst2 : IN std_logic_vector(2 DOWNTO 0);
+	EM_WB_signal: IN std_logic;
+	EM_swap_signal: IN std_logic;
+	EM_memory_signal : IN std_logic;
+
+	MW_Rdst1 : IN std_logic_vector(2 DOWNTO 0);
+	MW_Rdst2 : IN std_logic_vector(2 DOWNTO 0);
+	MW_WB_signal : IN std_logic;
+	MW_swap_signal : IN std_logic;
+
+	memory_instruction : IN std_logic_vector(15 DOWNTO 0);
+
+	DE_Rsrc1 : IN std_logic_vector(2 DOWNTO 0);
+	DE_Rsrc2 : IN std_logic_vector(2 DOWNTO 0);
+	DE_WB_signal : IN std_logic;
+	DE_swap_signal : IN std_logic;
+	DE_memory_signal : IN std_logic;
+	DE_oneSrc_signal : IN std_logic;
+
+	--OUTPUT SIGNALS FOR FORWARDING TO FETCH
+	ALU_F_Rdst1 : OUT std_logic;
+	ALU_F_Rdst2 : OUT std_logic;
+	MEM_F_Rdst1 : OUT std_logic;
+	MEM_F_Rdst2 : OUT std_logic;
+
+	--OUTPUT SIGNALS FOR FORWARDING FROM ALU TO ALU
+	ALU_ALU_Rdst1_Rsrc1 : OUT std_logic;
+	ALU_ALU_Rdst1_Rsrc2 : OUT std_logic;
+	ALU_ALU_Rdst2_Rsrc1 : OUT std_logic;
+	ALU_ALU_Rdst2_Rsrc2 : OUT std_logic;
+
+	--OUTPUT SIGNALS FOR FORWARDING FROM MEMORY TO ALU
+	MEM_ALU_Rdst1_Rsrc1 : OUT std_logic;
+	MEM_ALU_Rdst1_Rsrc2 : OUT std_logic;
+	MEM_ALU_Rdst2_Rsrc1 : OUT std_logic;
+	MEM_ALU_Rdst2_Rsrc2 : OUT std_logic
+);
+	
+END COMPONENT;
+
+--Define ALU input selectors
+
+COMPONENT ALU_in1_selector IS
+PORT( 
+	    EM_data1 : IN std_logic_vector(31 DOWNTO 0);
+	    EM_data2 : IN std_logic_vector(31 DOWNTO 0);
+	    MW_data1 : IN std_logic_vector(31 DOWNTO 0);
+	    MW_data2 : IN std_logic_vector(31 DOWNTO 0);
+
+	    DE_data1 : IN std_logic_vector(31 DOWNTO 0);
+
+	    ALU_ALU_Rdst1_Rsrc1 : IN std_logic;
+	    ALU_ALU_Rdst2_Rsrc1 : IN std_logic;
+	    MEM_ALU_Rdst1_Rsrc1 : IN std_logic;
+	    MEM_ALU_Rdst2_Rsrc1 : IN std_logic;
+
+	    ALU_in1 : OUT std_logic_vector(31 DOWNTO 0)
+
+);
+	
+END COMPONENT;
+
+COMPONENT ALU_in2_selector IS
+PORT( 
+	    EM_data1 : IN std_logic_vector(31 DOWNTO 0);
+	    EM_data2 : IN std_logic_vector(31 DOWNTO 0);
+	    MW_data1 : IN std_logic_vector(31 DOWNTO 0);
+	    MW_data2 : IN std_logic_vector(31 DOWNTO 0);
+
+	    DE_data2 : IN std_logic_vector(31 DOWNTO 0);
+
+	    ALU_ALU_Rdst1_Rsrc2 : IN std_logic;
+	    ALU_ALU_Rdst2_Rsrc2 : IN std_logic;
+	    MEM_ALU_Rdst1_Rsrc2 : IN std_logic;
+	    MEM_ALU_Rdst2_Rsrc2 : IN std_logic;
+
+	    ALU_in2 : OUT std_logic_vector(31 DOWNTO 0)
+
+);
+	
+END COMPONENT;
+
+--Define fetch Rdst selector
+
+COMPONENT fetch_Rdst_selector IS
+PORT( 
+	    EM_data1 : IN std_logic_vector(31 DOWNTO 0);
+	    EM_data2 : IN std_logic_vector(31 DOWNTO 0);
+	    MW_data1 : IN std_logic_vector(31 DOWNTO 0);
+	    MW_data2 : IN std_logic_vector(31 DOWNTO 0);
+
+	    REG_data : IN std_logic_vector(31 DOWNTO 0);
+
+	    ALU_F_Rdst1 : IN std_logic;
+	    ALU_F_Rdst2 : IN std_logic;
+	    MEM_F_Rdst1 : IN std_logic;
+	    MEM_F_Rdst2 : IN std_logic;
+
+	    data : OUT std_logic_vector(31 DOWNTO 0)
+
+);
+	
+END COMPONENT;
+
+--Define flag register
+
+
+COMPONENT flag_reg IS
+PORT( Clk,Reset, Enable : IN std_logic;
+
+	    d_flags : IN std_logic_vector(3 DOWNTO 0);
+	    q_flags : OUT std_logic_vector(3 DOWNTO 0)
+);
+	
+END COMPONENT;
 -- =====================================================================================
 -- SIGNALS USED ========================================================================
 -- =====================================================================================
