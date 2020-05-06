@@ -45,6 +45,7 @@ Architecture behavioural of control_unit is
 			end if;
 		elsif input = "10000" then sel_data1<='1'; output_port<='1';	--OUT
 		elsif input = "10001" then input_port<='1'; write_back<='1'; 	--IN
+		sel_inputport<='1';
 		elsif input = "10100" then sel_data2<='1'; enable_mem<='1';	--CALL
 		enable_stack<='1'; push_pop<='1'; read_write<='1';
 		elsif input = "10101" then enable_mem<='1'; enable_stack<='1';	--RET

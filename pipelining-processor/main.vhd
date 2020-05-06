@@ -3,7 +3,7 @@ USE IEEE.std_logic_1164.all;
 -- main entity of the processor
 ENTITY main IS
 PORT(	
-	CLK,RST : IN std_logic
+	CLK,RST,INT : IN std_logic
 );
 END main;
 
@@ -20,6 +20,29 @@ PORT( Clk,Rst : IN std_logic;
 	    q : OUT std_logic_vector(n-1 DOWNTO 0);
 	enable: in std_logic);
 END COMPONENT;
+-- Define one bit buffer
+COMPONENT one_bit_buffer is
+    port (      clk,rst,set,clr	: in std_logic;
+		output	: out std_logic);
+END COMPONENT;
+-- Define Control Unit
+COMPONENT control_unit is
+    port (      rst: in std_logic;
+		input: in std_logic_vector(4 DOWNTO 0);
+		alu_operation: out std_logic_vector(3 DOWNTO 0);
+		one_src, input_port,
+		enable_temp2,
+           	sel_alu,sel_data1,		--alu ops
+		sel_data2,sel_inputport,
+		enable_mem, read_write,		--memory ops
+		enable_stack, push_pop,
+		mem_to_pc, clr_rbit,
+		clr_int,
+		write_back, swap,		--write back ops
+		rti_pop_flags, int_push_flags, 
+		output_port
+			: out std_logic);
+end COMPONENT;
 -- Define incrementor 
 COMPONENT incrementor IS
 GENERIC ( n : integer := 32);
@@ -77,8 +100,40 @@ signal  instruction_address, incremented_pc, not_taken_address, not_taken_addres
         address_loaded_from_memory,jump_address , address_to_pc, write_port_data1,write_port_data2,
 	read_port_data1,read_port_data2,read_port_data3: std_logic_vector(31 downto 0);
 
+		
 signal  jump_enable, not_taken_address_enable,jz_opcode,call_opcode,jmp_opcode, zero_flag_bit, 
-        connect_memory_pc, stall, address_loaded_from_memory_enable, wb_signal, swap_signal : std_logic;
+        connect_memory_pc, stall, address_loaded_from_memory_enable, wb_signal, swap_signal, 
+---------------------------------------------------------------------------------------
+--interrupt and return one bit buffers output signals
+	int_bit_out,int_push_bit_out,rbit_out,
+
+---------------------------------------------------------------------------------------
+--CONTOL UNIT OUTPUT SIGNALS
+	one_src, 	--One source signal
+	input_port, 	--Input port used signal
+	enable_temp2, 	--Enable temp2 signal
+--Execution Stage mux output
+        sel_alu,	--Select ALU signal
+	sel_data1,	--Select Data1 signal
+	sel_data2,	--Select Data2 signal
+	sel_inputport,	--Select input port (same as input_port but this one is instead of the output of the mux, I left it to prevent confusion as the 2 exist in the document)
+--memory ops
+	enable_mem,	--Enables RAM Memory module
+	read_write,	--1 for write, 0 for read
+	enable_stack,	--Enables stack
+ 	push_pop,	--1 for push, 0 for pop
+	mem_to_pc,	--Connects memory output to pc input
+	clr_rbit,	--Clears rbit buffer
+	clr_int,	--Clears interrupt buffer
+--write back ops
+	write_back,	--Writes back to register file
+	swap,		--Swap operation
+	rti_pop_flags, 	--Pops flags due to rti
+	int_push_flags, --Pushs flags due to int
+	output_port	--Output port used signal
+	: std_logic;
+signal alu_operation: std_logic_vector(3 DOWNTO 0); -- alu operation used
+---------------------------------------------------------------------------------------
 
 signal output_state,state_data_read,state_data_read_fetch_buffer: std_logic_vector(1 downto 0);
 signal state_address_write,state_address_read : std_logic_vector(7 DOWNTO 0);
@@ -88,7 +143,33 @@ signal opcode: std_logic_vector(4 downto 0);
 -- BEGINING of the program  ============================================================
 -- =====================================================================================
 BEGIN
+-- =====================================================================================
+-- 3 one bit buffers  ==================================================================
+-- =====================================================================================
 
+INT_BIT: one_bit_buffer
+PORT MAP(	CLK,RST,INT,clr_int,int_bit_out);
+--RBIT: one_bit_buffer
+--PORT MAP(	CLK,RST,RET_OR_RTI FROM FETCH DETECTION, clr_rbit,rbit_out);
+INT_PUSH_BIT: one_bit_buffer
+PORT MAP(	CLK,RST,int_push_flags,int_push_bit_out,int_push_bit_out);
+
+
+
+CU: control_unit
+port MAP (      RST, OPCODE,
+		alu_operation,
+		one_src, input_port,
+		enable_temp2,
+           	sel_alu,sel_data1,		--alu ops
+		sel_data2,sel_inputport,
+		enable_mem, read_write,		--memory ops
+		enable_stack, push_pop,
+		mem_to_pc, clr_rbit,
+		clr_int,
+		write_back, swap,		--write back ops
+		rti_pop_flags, int_push_flags, 
+		output_port);
 -- =====================================================================================
 -- Register Files  =====================================================================
 -- =====================================================================================
