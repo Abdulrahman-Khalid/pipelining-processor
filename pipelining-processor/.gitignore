@@ -4,4 +4,5 @@
 !/Do_Files/*
 !.gitignore
 !*.vhd
+!*.mem
 !readme.md
