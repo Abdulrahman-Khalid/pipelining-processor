@@ -18,7 +18,7 @@ Architecture behavioural of one_bit_buffer is
 	elsif rising_edge(clk) then
 		if set = '1' then
 			output<= '1';
-		elsif clr = '1'
+		elsif clr = '1' then
 			output<= '0';
 		end if;
 	end if;

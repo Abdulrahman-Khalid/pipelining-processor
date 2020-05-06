@@ -33,6 +33,9 @@ package constants is
     constant OperationSHL: std_logic_vector(4 downto 0) :=  "01000";
     constant OperationSHR: std_logic_vector(4 downto 0) :=  "01001";
     constant OperationIADD: std_logic_vector(4 downto 0) :=  "01010";
+    --Data Size
+    constant RAM_ADDRESS_WIDTH: integer := 11;
+    constant WORD_SIZE: integer := 16;
     --flags 
     constant flagsCount: integer := 3;
     constant zFlag: integer := 0; --zero flag

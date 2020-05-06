@@ -1,4 +1,5 @@
 LIBRARY IEEE;
+USE work.constants.all;
 USE IEEE.std_logic_1164.all;
 -- main entity of the processor
 ENTITY main IS
@@ -11,6 +12,17 @@ ARCHITECTURE a_main OF main IS
 -- =====================================================================================
 -- COMPONENTS USED =====================================================================
 -- =====================================================================================  
+-- Define RAM
+COMPONENT RAM IS
+	GENERIC (wordSize : integer := 16; addressWidth: integer := 11; RAMSize: integer := 2048);
+	PORT(	
+		W  : IN std_logic;
+		R  : IN std_logic;
+		address : IN  std_logic_vector(addressWidth - 1 DOWNTO 0);
+		dataIn  : IN  std_logic_vector(wordSize - 1 DOWNTO 0);
+		dataOut  : OUT  std_logic_vector(wordSize - 1 DOWNTO 0));
+END COMPONENT RAM;
+
 -- Define PC register
 COMPONENT pc_register IS
 GENERIC ( n : integer := 32;
@@ -99,14 +111,17 @@ END COMPONENT;
 signal  instruction_address, incremented_pc, not_taken_address, not_taken_address_to_fetch_buffer,
         address_loaded_from_memory,jump_address , address_to_pc, write_port_data1,write_port_data2,
 	read_port_data1,read_port_data2,read_port_data3: std_logic_vector(31 downto 0);
+---------------------------------------------------------------------------------------
+signal ram_write, ram_read :std_logic;
+signal ram_address :  std_logic_vector(RAM_ADDRESS_WIDTH - 1 DOWNTO 0);
+signal ram_data_in, ram_data_out : std_logic_vector(WORD_SIZE - 1 DOWNTO 0);
 
-		
+---------------------------------------------------------------------------------------
 signal  jump_enable, not_taken_address_enable,jz_opcode,call_opcode,jmp_opcode, zero_flag_bit, 
         connect_memory_pc, stall, address_loaded_from_memory_enable, wb_signal, swap_signal, 
 ---------------------------------------------------------------------------------------
 --interrupt and return one bit buffers output signals
 	int_bit_out,int_push_bit_out,rbit_out,
-
 ---------------------------------------------------------------------------------------
 --CONTOL UNIT OUTPUT SIGNALS
 	one_src, 	--One source signal
@@ -144,6 +159,12 @@ signal opcode: std_logic_vector(4 downto 0);
 -- =====================================================================================
 BEGIN
 -- =====================================================================================
+-- RAM  ================================================================================
+-- =====================================================================================
+
+RAM1: RAM
+PORT MAP(	ram_write, ram_read, ram_address,ram_data_in,ram_data_out);
+-- =====================================================================================
 -- 3 one bit buffers  ==================================================================
 -- =====================================================================================
 
@@ -154,7 +175,9 @@ PORT MAP(	CLK,RST,INT,clr_int,int_bit_out);
 INT_PUSH_BIT: one_bit_buffer
 PORT MAP(	CLK,RST,int_push_flags,int_push_bit_out,int_push_bit_out);
 
-
+-- =====================================================================================
+-- Control Unit  =======================================================================
+-- =====================================================================================
 
 CU: control_unit
 port MAP (      RST, OPCODE,
