@@ -44,6 +44,7 @@ Architecture behavioural of control_unit is
 				write_back<='1';
 			end if;
 		elsif input = "10000" then sel_data1<='1'; output_port<='1';	--OUT
+		out_src<='1';
 		elsif input = "10001" then input_port<='1'; write_back<='1'; 	--IN
 		sel_inputport<='1';
 		elsif input = "10100" then sel_data2<='1'; enable_mem<='1';	--CALL
