@@ -4,17 +4,17 @@ USE IEEE.numeric_std.all;
 use STD.TEXTIO.all;
 
 ENTITY RAM IS
-	GENERIC (wordSize : integer := 16; addressWidth: integer := 11; RAMSize: integer := 2048);
+	GENERIC (wordSize : integer := 16; addressWidth: integer := 32; RAMSize: integer := 2**20-1); --2,147,483,647 == 2^31-1
 	PORT(	
 		W  : IN std_logic;
 		R  : IN std_logic;
 		address : IN  std_logic_vector(addressWidth - 1 DOWNTO 0);
-		dataIn  : IN  std_logic_vector(wordSize - 1 DOWNTO 0);
-		dataOut  : OUT  std_logic_vector(wordSize - 1 DOWNTO 0));
+		dataIn  : IN  std_logic_vector(2*wordSize - 1 DOWNTO 0);
+		dataOut  : OUT  std_logic_vector(2*wordSize - 1 DOWNTO 0));
 END ENTITY RAM;
 
 ARCHITECTURE RAM_arch OF RAM IS
-    TYPE RAMType IS ARRAY(RAMSize - 1 DOWNTO 0) of std_logic_vector(wordSize - 1 DOWNTO 0);
+    TYPE RAMType IS ARRAY(RAMSize DOWNTO 0) of std_logic_vector(wordSize - 1 DOWNTO 0);
     
 	-- Input RAM Data from Assembler Program
 
@@ -29,7 +29,7 @@ ARCHITECTURE RAM_arch OF RAM IS
 	BEGIN
 		 file_open(RAMFile, "out.mem",  read_mode);
 		 count := 0;
-  		 WHILE not ENDFILE(RAMFile) LOOP
+  		 WHILE count/=4 LOOP
 			readline(RAMFile, textLine);
 			read(textLine, c);
 			read(textLine, c);
@@ -53,12 +53,14 @@ ARCHITECTURE RAM_arch OF RAM IS
 	END FUNCTION fillRAM;
 SIGNAL RAM : RAMType := fillRAM;
 BEGIN
-PROCESS(W, R) IS
+PROCESS(W, R,address) IS
 	BEGIN
 	IF W = '1' THEN  
-		RAM(to_integer(unsigned(address))) <= dataIn;
+		RAM(to_integer(unsigned(address(30 downto 0)))) <= dataIn(15 downto 0);
+		RAM(1+to_integer(unsigned(address(30 downto 0)))) <= dataIn(31 downto 16);
 	ELSIF R = '1' THEN
-		dataOut <= RAM(to_integer(unsigned(address)));
+		dataOut(15 downto 0) <= RAM(to_integer(unsigned(address(30 downto 0))));
+		dataOut(31 downto 16) <= RAM(1+to_integer(unsigned(address(30 downto 0))));
 	END IF;
 END PROCESS;
 END RAM_arch;

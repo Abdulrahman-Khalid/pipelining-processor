@@ -12,9 +12,17 @@ ARCHITECTURE a_main OF main IS
 -- =====================================================================================
 -- COMPONENTS USED =====================================================================
 -- =====================================================================================  
+-- Define ROM
+COMPONENT ROM IS
+	GENERIC (wordSize : integer := 16; addressWidth: integer := 11; ROMSize: integer := 2048);
+		PORT(	
+		enable  : IN std_logic;
+		address : IN  std_logic_vector(addressWidth - 1 DOWNTO 0);
+		dataOut  : OUT  std_logic_vector(wordSize - 1 DOWNTO 0));
+END COMPONENT ROM;
 -- Define RAM
 COMPONENT RAM IS
-	GENERIC (wordSize : integer := 16; addressWidth: integer := 11; RAMSize: integer := 2048);
+	GENERIC (wordSize : integer := 16; addressWidth: integer := 32; RAMSize: integer := 2**20-1);
 	PORT(	
 		W  : IN std_logic;
 		R  : IN std_logic;
@@ -22,7 +30,6 @@ COMPONENT RAM IS
 		dataIn  : IN  std_logic_vector(wordSize - 1 DOWNTO 0);
 		dataOut  : OUT  std_logic_vector(wordSize - 1 DOWNTO 0));
 END COMPONENT RAM;
-
 -- Define PC register
 COMPONENT pc_register IS
 GENERIC ( n : integer := 32;
@@ -326,9 +333,11 @@ signal  instruction_address, incremented_pc, not_taken_address, not_taken_addres
         address_loaded_from_memory,jump_address , address_to_pc, write_port_data1,write_port_data2,
 	read_port_data1,read_port_data2,read_port_data3: std_logic_vector(31 downto 0);
 ---------------------------------------------------------------------------------------
-signal ram_write, ram_read :std_logic;
-signal ram_address :  std_logic_vector(RAM_ADDRESS_WIDTH - 1 DOWNTO 0);
-signal ram_data_in, ram_data_out : std_logic_vector(WORD_SIZE - 1 DOWNTO 0);
+signal ram_read,ram_write,rom_read :std_logic;
+signal ram_address : std_logic_vector(RAM_ADDRESS_WIDTH-1 DOWNTO 0);
+signal rom_address :  std_logic_vector(ROM_ADDRESS_WIDTH - 1 DOWNTO 0);
+signal ram_data_in,ram_data_out : std_logic_vector( 2*WORD_SIZE - 1 DOWNTO 0);
+signal rom_data_out : std_logic_vector(WORD_SIZE - 1 DOWNTO 0);
 
 ---------------------------------------------------------------------------------------
 signal  jump_enable, not_taken_address_enable,jz_opcode,call_opcode,jmp_opcode, zero_flag_bit, 
@@ -336,6 +345,7 @@ signal  jump_enable, not_taken_address_enable,jz_opcode,call_opcode,jmp_opcode, 
 ---------------------------------------------------------------------------------------
 --interrupt and return one bit buffers output signals
 	int_bit_out,int_push_bit_out,rbit_out,
+	ret_opcode,rti_opcode,rti_or_ret,
 ---------------------------------------------------------------------------------------
 --CONTOL UNIT OUTPUT SIGNALS
 	one_src, 	--One source signal
@@ -347,7 +357,7 @@ signal  jump_enable, not_taken_address_enable,jz_opcode,call_opcode,jmp_opcode, 
 	sel_data2,	--Select Data2 signal
 	sel_inputport,	--Select input port (same as input_port but this one is instead of the output of the mux, I left it to prevent confusion as the 2 exist in the document)
 --memory ops
-	enable_mem,	--Enables RAM Memory module
+	enable_mem,	--Enables ROM Memory module
 	read_write,	--1 for write, 0 for read
 	enable_stack,	--Enables stack
  	push_pop,	--1 for push, 0 for pop
@@ -369,23 +379,33 @@ signal state_address_write,state_address_read : std_logic_vector(7 DOWNTO 0);
 signal write_port_address1,write_port_address2,read_port_address1,read_port_address2,read_port_address3 : std_logic_vector(2 DOWNTO 0);
 signal opcode: std_logic_vector(4 downto 0);
 -- =====================================================================================
--- BEGINING of the program  ============================================================
+-- BEGINING of the progrom  ============================================================
 -- =====================================================================================
 BEGIN
+-- =====================================================================================
+-- ROM  ================================================================================
+-- =====================================================================================
+
+ROM1: ROM
+PORT MAP(	rom_read, rom_address,rom_data_out);
 -- =====================================================================================
 -- RAM  ================================================================================
 -- =====================================================================================
 
 RAM1: RAM
-PORT MAP(	ram_write, ram_read, ram_address,ram_data_in,ram_data_out);
+PORT MAP(	ram_write,ram_read, ram_address,ram_data_in,ram_data_out);
+
 -- =====================================================================================
 -- 3 one bit buffers  ==================================================================
 -- =====================================================================================
-
+rti_opcode<= (opcode(4)and (not opcode(3)) and  opcode(2) and opcode(1) and (not opcode(0)) );
+ret_opcode<= (opcode(4)and (not opcode(3)) and  opcode(2) and (not opcode(1)) and opcode(0) );
+rti_or_ret<= ret_opcode or rti_opcode;
+----------------------------------------------------------------------------------------
 INT_BIT: one_bit_buffer
 PORT MAP(	CLK,RST,INT,clr_int,int_bit_out);
---RBIT: one_bit_buffer
---PORT MAP(	CLK,RST,RET_OR_RTI FROM FETCH DETECTION, clr_rbit,rbit_out);
+RBIT: one_bit_buffer
+PORT MAP(	CLK,RST,rti_or_ret, clr_rbit,rbit_out);
 INT_PUSH_BIT: one_bit_buffer
 PORT MAP(	CLK,RST,int_push_flags,int_push_bit_out,int_push_bit_out);
 
