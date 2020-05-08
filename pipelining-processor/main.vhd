@@ -391,7 +391,8 @@ SIGNAL FD_d_state_address, FD_q_state_address : std_logic_vector(1 DOWNTO 0);
 --DECODE EXCUTE BUFFER SIGNALS
 
 SIGNAL DE_d_WB_signals, DE_q_WB_signals : std_logic_vector(4 DOWNTO 0);
-SIGNAL DE_d_excute_signals, DE_d_excute_signals : std_logic_vector(8 DOWNTO 0);
+SIGNAL DE_d_excute_signals, DE_q_excute_signals : std_logic_vector(8 DOWNTO 0);
+SIGNAL DE_d_memory_signals, DE_q_memory_signals : std_logic_vector(6 DOWNTO 0); 
 SIGNAL DE_d_data1, DE_q_data1 : std_logic_vector(31 DOWNTO 0);
 SIGNAL DE_d_data2, DE_q_data2 : std_logic_vector(31 DOWNTO 0);
 SIGNAL DE_d_Rsrc1, DE_q_Rsrc1 : std_logic_vector(2 DOWNTO 0);
@@ -499,17 +500,21 @@ SM: state_memory PORT MAP(CLK ,not_taken_address_enable,state_address_write,stat
 --FETCH DECODE BUFFER=====================================================================
 --========================================================================================
 
-fdbuff : FD_buffer PORTMAP(CLK, Reset, Enable, Flush, d_instruction, q_instruction,
- 	d_not_taken_address, q_not_taken_address, d_predicted_state, q_predicted_state,
-	d_state_address, q_state_address);
+fdbuff : FD_buffer PORT MAP(CLK, RST, FD_Enable, FD_Flush, FD_d_instruction, FD_q_instruction,
+ 	FD_d_not_taken_address, FD_q_not_taken_address, FD_d_predicted_state, FD_q_predicted_state,
+	FD_d_state_address, FD_q_state_address);
 
 --========================================================================================
 --DECODE EXCUTE BUFFER====================================================================
 --========================================================================================
-debuff : DE_buffer PORTMAP(CLK, Reset, write_back&swap&output_port&rti_pop_flags&int_push_flags,q_WB_signals,
-	enable_mem&read_write&enable_stack&push_pop&mem_to_pc&clr_rbit&clr_int , q_memory_signals,
-	alu_operation&input_port&one_src&"00"&enable_temp2 , q_excute_signals, d_data1, q_data1, d_data2, q_data2,
-	d_Rsrc1, q_Rsrc1, d_Rsrc2, q_Rsrc2, d_Rdst1, q_Rdst1, d_Rdst2, q_Rdst2)
+DE_d_WB_signals <= write_back&swap&output_port&rti_pop_flags&int_push_flags;
+DE_d_memory_signals <= enable_mem&read_write&enable_stack&push_pop&mem_to_pc&clr_rbit&clr_int;
+DE_d_excute_signals <= alu_operation&input_port&one_src&"00"&enable_temp2;
+
+debuff : DE_buffer PORT MAP(CLK, RST,DE_d_WB_signals,DE_q_WB_signals,
+	DE_d_memory_signals , DE_q_memory_signals,
+	DE_d_excute_signals , DE_q_excute_signals, DE_d_data1, DE_q_data1, DE_d_data2, DE_q_data2,
+	DE_d_Rsrc1, DE_q_Rsrc1, DE_d_Rsrc2, DE_q_Rsrc2, DE_d_Rdst1, DE_q_Rdst1, DE_d_Rdst2, DE_q_Rdst2);
 
 
 END a_main;
