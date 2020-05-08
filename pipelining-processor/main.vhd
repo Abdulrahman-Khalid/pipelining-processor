@@ -473,5 +473,21 @@ JCC: jump_check_circuit PORT MAP (CLK,RST,jz_opcode,state_data_read_fetch_buffer
 SM: state_memory PORT MAP(CLK ,not_taken_address_enable,state_address_write,state_address_read ,
 		output_state , state_data_read);
 
+--========================================================================================
+--FETCH DECODE BUFFER=====================================================================
+--========================================================================================
+
+fdbuff : FD_buffer PORTMAP(CLK, Reset, Enable, Flush, d_instruction, q_instruction,
+ 	d_not_taken_address, q_not_taken_address, d_predicted_state, q_predicted_state,
+	d_state_address, q_state_address);
+
+--========================================================================================
+--DECODE EXCUTE BUFFER====================================================================
+--========================================================================================
+debuff : DE_buffer PORTMAP(CLK, Reset, write_back&swap&output_port&rti_pop_flags&int_push_flags,q_WB_signals,
+	enable_mem&read_write&enable_stack&push_pop&mem_to_pc&clr_rbit&clr_int , q_memory_signals,
+	alu_operation&input_port&one_src&"00"&enable_temp2 , q_excute_signals, d_data1, q_data1, d_data2, q_data2,
+	d_Rsrc1, q_Rsrc1, d_Rsrc2, q_Rsrc2, d_Rdst1, q_Rdst1, d_Rdst2, q_Rdst2)
+
 
 END a_main;
