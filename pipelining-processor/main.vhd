@@ -378,6 +378,28 @@ signal output_state,state_data_read,state_data_read_fetch_buffer: std_logic_vect
 signal state_address_write,state_address_read : std_logic_vector(7 DOWNTO 0);
 signal write_port_address1,write_port_address2,read_port_address1,read_port_address2,read_port_address3 : std_logic_vector(2 DOWNTO 0);
 signal opcode: std_logic_vector(4 downto 0);
+
+---------------------------------------------------------------------------------------
+--FETCH DECODE BUFFER SIGNALS
+
+SIGNAL FD_Flush, FD_Enable : std_logic;
+SIGNAL FD_d_instruction, FD_q_instruction : std_logic_vector(15 DOWNTO 0);
+SIGNAL FD_d_not_taken_address, FD_q_not_taken_address : std_logic_vector(31 DOWNTO 0);
+SIGNAL FD_d_predicted_state, FD_q_predicted_state : std_logic_vector(1 DOWNTO 0);
+SIGNAL FD_d_state_address, FD_q_state_address : std_logic_vector(1 DOWNTO 0);
+----------------------------------------------------------------------------------------
+--DECODE EXCUTE BUFFER SIGNALS
+
+SIGNAL DE_d_WB_signals, DE_q_WB_signals : std_logic_vector(4 DOWNTO 0);
+SIGNAL DE_d_excute_signals, DE_d_excute_signals : std_logic_vector(8 DOWNTO 0);
+SIGNAL DE_d_data1, DE_q_data1 : std_logic_vector(31 DOWNTO 0);
+SIGNAL DE_d_data2, DE_q_data2 : std_logic_vector(31 DOWNTO 0);
+SIGNAL DE_d_Rsrc1, DE_q_Rsrc1 : std_logic_vector(2 DOWNTO 0);
+SIGNAL DE_d_Rsrc2, DE_q_Rsrc2 : std_logic_vector(2 DOWNTO 0);
+SIGNAL DE_d_Rdst1, DE_q_Rdst1 : std_logic_vector(2 DOWNTO 0);
+SIGNAL DE_d_Rdst2, DE_q_Rdst2 : std_logic_vector(2 DOWNTO 0);
+
+
 -- =====================================================================================
 -- BEGINING of the progrom  ============================================================
 -- =====================================================================================
