@@ -62,8 +62,7 @@ Architecture behavioural of control_unit is
 		enable_stack<='1'; push_pop<='1'; read_write<='1';enable_mem<='1';
 		elsif input = "11001" then enable_mem<='1'; enable_stack<='1'; 	--POP
 		push_pop<='0'; read_write<='0'; write_back<='1';
-		elsif input = "11010" then enable_mem<='1'; write_back<='1';	--LDM
-		read_write<='0';
+		elsif input = "11010" then read_write<='0';			--LDM -- modified by amr enable_mem<='1'; write_back<='1';
 		elsif input = "11011" then enable_mem<='1'; write_back<='1';	--LDD
 		read_write<='0';
 		elsif input = "11100" then  cu_s1<='0';cu_s0<='1';		--STD

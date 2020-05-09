@@ -4,9 +4,14 @@ USE IEEE.std_logic_1164.all;
 -- main entity of the processor
 ENTITY main IS
 PORT(	
-	CLK,RST,INT : IN std_logic
+	CLK,RST,INT : IN std_logic;
+	input_port_data: IN std_logic_vector(31 downto 0)
 );
 END main;
+
+-- =====================================================================================
+-- MAIN ARCHITECTURE ===================================================================
+-- ===================================================================================== 
 
 ARCHITECTURE a_main OF main IS
 -- =====================================================================================
@@ -30,6 +35,15 @@ COMPONENT RAM IS
 		dataIn  : IN  std_logic_vector(wordSize - 1 DOWNTO 0);
 		dataOut  : OUT  std_logic_vector(wordSize - 1 DOWNTO 0));
 END COMPONENT RAM;
+-- Define data to RAM selector
+COMPONENT RAM_datain is
+GENERIC ( n : integer := 32);
+ port(
+     data,temp2,flags : in std_logic_vector(n-1 DOWNTO 0);
+     temp2_enable,flags_enable: in STD_LOGIC;
+     data_out: out std_logic_vector(n-1 DOWNTO 0)
+  );
+END COMPONENT;
 -- Define Mux 2x1
 COMPONENT mux_2X1 IS
 	GENERIC ( n : integer := 32);
@@ -38,6 +52,15 @@ COMPONENT mux_2X1 IS
 		output	      : OUT std_logic_vector(n-1 DOWNTO 0);
 		selector      : IN std_logic
 	);	
+END COMPONENT;
+-- Define Register 
+COMPONENT registerr IS
+GENERIC ( n : integer := 32);
+PORT( Clk,Rst 	: IN std_logic;
+	d	: IN std_logic_vector(n-1 DOWNTO 0);
+	q 	: OUT std_logic_vector(n-1 DOWNTO 0);
+ 	enable: in std_logic
+);
 END COMPONENT;
 -- Define Stack Pointer
 COMPONENT stack_pointer IS
@@ -110,6 +133,7 @@ COMPONENT state_memory IS
 		dataout : OUT std_logic_vector(wordSize - 1 DOWNTO 0));
 END COMPONENT;
 
+-- Define dynamic jumo check prediction circuit
 COMPONENT jump_check_circuit is
     port (      clk,rst: in std_logic;
 		jz_opcode: in std_logic;
@@ -119,6 +143,7 @@ COMPONENT jump_check_circuit is
 		not_taken_enable: out std_logic);
 END COMPONENT;
 
+-- Define register files that contain 3 read ports and 2 write ports
 COMPONENT register_files IS
 GENERIC ( n : integer := 32);
 PORT( 		Clk,Rst,wb_signal,swap_signal : IN std_logic;
@@ -333,22 +358,38 @@ PORT(
 END COMPONENT;
 
 --Define flag register
-
-
 COMPONENT flag_reg IS
 PORT( Clk,Reset, Enable : IN std_logic;
 
-	    d_flags : IN std_logic_vector(3 DOWNTO 0);
-	    q_flags : OUT std_logic_vector(3 DOWNTO 0)
+	    d_flags : IN std_logic_vector(2 DOWNTO 0);
+	    q_flags : OUT std_logic_vector(2 DOWNTO 0)
 );
 	
+END COMPONENT;
+
+-- Define ALU 
+COMPONENT ALU is
+    generic(n: integer := 32; m: integer := 5);
+    port(operationControl: in std_logic_vector(m-1 downto 0);
+        A, B: in std_logic_vector(n-1 downto 0);
+        F: out std_logic_vector(n-1 downto 0);
+        flagIn: in std_logic_vector(flagsCount-1 downto 0);
+        flagOut: out std_logic_vector(flagsCount-1 downto 0));
+END COMPONENT;
+-- Define Hazard Detection Unit
+COMPONENT HDU is
+    generic(n: integer := 3);
+    port(WB_CU, WB_ID_E, WB_E_MEM, swap_CU, swap_ID_E, load_ID_E, load_E_MEM, Branch_MEM: in std_logic;
+        Rsrc1_F_ID, Rsrc2_F_ID, Rdst1_F_ID, Rdst2_F_ID, Rdst1_ID_E, Rdst2_ID_E, Rdst_E_MEM, Rdst_MEM: in std_logic_vector(n-1 downto 0);
+        insert_bubble, flush: out std_logic);
 END COMPONENT;
 -- =====================================================================================
 -- SIGNALS USED ========================================================================
 -- =====================================================================================
-signal  instruction_address, incremented_pc, not_taken_address, not_taken_address_to_fetch_buffer,
-        address_loaded_from_memory,jump_address , address_to_pc, write_port_data1,write_port_data2,
-	read_port_data1,read_port_data2,read_port_data3: std_logic_vector(31 downto 0);
+signal  instruction_address, incremented_pc, address_loaded_from_memory,
+	jump_address , address_to_pc, write_port_data1,write_port_data2,
+	read_port_data1,read_port_data2,read_port_data3,temp2_dataout,
+	output_port_data: std_logic_vector(31 downto 0);
 ---------------------------------------------------------------------------------------
 signal ram_read,ram_write,rom_read :std_logic;
 signal ram_address : std_logic_vector(RAM_ADDRESS_WIDTH-1 DOWNTO 0);
@@ -357,11 +398,12 @@ signal ram_data_in,ram_data_out : std_logic_vector( 2*WORD_SIZE - 1 DOWNTO 0);
 signal rom_data_out : std_logic_vector(WORD_SIZE - 1 DOWNTO 0);
 ---------------------------------------------------------------------------------------
 signal sp_out,m_mux1_out,m_mux2_out : std_logic_vector(2*WORD_SIZE-1 DOWNTO 0);
-signal M_sel : std_logic;
-
+signal m_sel : std_logic;
+signal flag_in,flag_out: std_logic_vector(flagsCount-1 downto 0);
 ---------------------------------------------------------------------------------------
 signal  jump_enable, not_taken_address_enable,jz_opcode,call_opcode,jmp_opcode, zero_flag_bit, 
-        connect_memory_pc, stall, address_loaded_from_memory_enable, wb_signal, swap_signal, 
+        connect_memory_pc, stall, address_loaded_from_memory_enable,flag_enable,
+	insert_bubble, flush,
 ---------------------------------------------------------------------------------------
 --interrupt and return one bit buffers output signals
 	int_bit_out,int_push_bit_out,rbit_out,
@@ -437,22 +479,12 @@ SIGNAL MW_d_Rdst2, MW_q_Rdst2 : std_logic_vector(2 DOWNTO 0);
 -- BEGINING of the progrom  ============================================================
 -- =====================================================================================
 BEGIN
--- =====================================================================================
--- ROM  ================================================================================
--- =====================================================================================
-
-ROM1: ROM
-PORT MAP(	rom_read, rom_address,rom_data_out);
--- =====================================================================================
--- RAM  ================================================================================
--- =====================================================================================
-
-RAM1: RAM
-PORT MAP(	ram_write,ram_read, ram_address,ram_data_in,ram_data_out);
 
 -- =====================================================================================
+-- General Components ==================================================================
+-- =====================================================================================
+
 -- 3 one bit buffers  ==================================================================
--- =====================================================================================
 rti_opcode<= (opcode(4)and (not opcode(3)) and  opcode(2) and opcode(1) and (not opcode(0)) );
 ret_opcode<= (opcode(4)and (not opcode(3)) and  opcode(2) and (not opcode(1)) and opcode(0) );
 rti_or_ret<= ret_opcode or rti_opcode;
@@ -465,54 +497,79 @@ PORT MAP(	CLK,RST,rti_or_ret, clr_rbit_EM,rbit_out);
 --INT_PUSH_BIT: one_bit_buffer 
 --PORT MAP(	CLK,RST,int_push_flags,int_push_bit_out_WB,int_push_bit_out);
 
+-- Hazard detection unit, UNFINISHED
+--hazards: HDU 
+--    generic map(n: integer := 3)
+    -- load_E_MEM is load signal from Execute-Memory buffer 
+    -- Branch_MEM is '1' if jmp or jz or call from memory
+
+    -- Rdst_E_MEM is Rdst from Execute-Memory buffer
+    -- Rdst_MEM is Rdst from memory
+--    port map(write_back, DE_q_WB_signals(4), DE_q_WB_signals(4), swap, DE_d_WB_signals, DE_q_memory_signals(6),
+--	 load_E_MEM, Branch_MEM, FD_q_instruction(5 downto 3), FD_q_instruction(8 downto 6),
+--	 FD_q_instruction(2 downto 0),FD_q_instruction(8 downto 6), DE_q_Rdst1, DE_q_Rdst2, Rdst_E_MEM, Rdst_MEM,
+--         insert_bubble, flush);
+--stall <= flush or insert_bubble;
+
+--FU: forwarding_unit 
+--PORT( 
+--	EM_q_Rdst1, EM_q_Rdst2, EM_q_WB_signals(4), EM_q_WB_signals(3), EM_q_memory_signals(6)
+--	MW_q_Rdst1, MW_q_Rdst2, MW_q_WB_signals(4), MW_q_WB_signals(3),
+--	rom_data_out,
+--	DE_Rsrc1 : IN std_logic_vector(2 DOWNTO 0);
+--	DE_Rsrc2 : IN std_logic_vector(2 DOWNTO 0);
+--	DE_WB_signal : IN std_logic;
+--	DE_swap_signal : IN std_logic;
+--	DE_memory_signal : IN std_logic;
+--	DE_oneSrc_signal : IN std_logic;
+
+	--OUTPUT SIGNALS FOR FORWARDING TO FETCH
+--	ALU_F_Rdst1 : OUT std_logic;
+--	ALU_F_Rdst2 : OUT std_logic;
+--	MEM_F_Rdst1 : OUT std_logic;
+--	MEM_F_Rdst2 : OUT std_logic;
+
+	--OUTPUT SIGNALS FOR FORWARDING FROM ALU TO ALU
+--	ALU_ALU_Rdst1_Rsrc1 : OUT std_logic;
+--	ALU_ALU_Rdst1_Rsrc2 : OUT std_logic;
+--	ALU_ALU_Rdst2_Rsrc1 : OUT std_logic;
+--	ALU_ALU_Rdst2_Rsrc2 : OUT std_logic;
+
+	--OUTPUT SIGNALS FOR FORWARDING FROM MEMORY TO ALU
+--	MEM_ALU_Rdst1_Rsrc1 : OUT std_logic;
+--	MEM_ALU_Rdst1_Rsrc2 : OUT std_logic;
+--	MEM_ALU_Rdst2_Rsrc1 : OUT std_logic;
+--	MEM_ALU_Rdst2_Rsrc2 : OUT std_logic
+--);
 -- =====================================================================================
--- Control Unit  =======================================================================
+-- FETCH STAGE  ========================================================================
 -- =====================================================================================
 
-CU: control_unit
-port MAP (      RST, OPCODE,
-		alu_operation,
-		one_src, input_port,
-		enable_temp2,
-		cu_s0,cu_s1,			--alu ops
-		enable_mem, read_write,		--memory ops
-		enable_stack, push_pop,
-		mem_to_pc, clr_rbit,
-		clr_int,
-		write_back, swap,		--write back ops
-		rti_pop_flags, int_push_flags, 
-		output_port);
--- =====================================================================================
--- Register Files  =====================================================================
--- =====================================================================================
-RF: register_files 
-PORT MAP(	CLK,RST,wb_signal,swap_signal,write_port_data1,write_port_data2,
-	    	write_port_address1,write_port_address2, 
-	    	read_port_data1,read_port_data2,read_port_data3,
-	    	read_port_address1,read_port_address2,read_port_address3);
+-- ROM  ===============================
+ROM1: ROM PORT MAP(rom_read, rom_address,rom_data_out);
 
--- =====================================================================================
--- PC ADDRESS HANDLING  ================================================================
--- =====================================================================================
--- TODO set not taken address to the one coming from fetch buffer, also put the address in the buffer (set not taken adddress to fetch buffer) 
-PC_ADDRESS_CIRCUIT: pc_circuit PORT MAP( 
-	instruction_address, incremented_pc, not_taken_address,
-	address_loaded_from_memory,jump_address ,
-	stall, jump_enable, not_taken_address_enable,
-	address_loaded_from_memory_enable,
-	address_to_pc, not_taken_address_to_fetch_buffer );
-address_loaded_from_memory_enable <= (connect_memory_pc or RST);
-PC : pc_register PORT MAP(CLK,RST,address_to_pc,instruction_address,'1');
-
-INC: incrementor PORT MAP(CLK,RST,instruction_address,incremented_pc,'1');
-
--- ROM connections =====================================================================
+-- ROM connections ====================
 rom_read<='1';
 rom_address<=instruction_address(10 downto 0);
 mux_rom_fd_int: mux_2X1
 GENERIC MAP(16)
 PORT MAP(rom_data_out,"1011100000000000",FD_d_instruction,int_bit_out);
 opcode<=FD_d_instruction(15 downto 11);
+
+-- PC ADDRESS HANDLING  ===============
+PC_ADDRESS_CIRCUIT: pc_circuit PORT MAP( 
+	instruction_address, incremented_pc, FD_q_not_taken_address,
+	address_loaded_from_memory,jump_address ,
+	stall, jump_enable, not_taken_address_enable,
+	address_loaded_from_memory_enable,
+	address_to_pc, FD_d_not_taken_address );
+address_loaded_from_memory_enable <= (connect_memory_pc or RST);
+
+PC : pc_register PORT MAP(CLK,RST,address_to_pc,instruction_address,'1');
+
+INC: incrementor PORT MAP(CLK,RST,instruction_address,incremented_pc,'1');
+
+
 -- =====================================================================================
 -- DYNAMIC PREDICTION FOR JUMP INSTRUCTION =============================================
 -- =====================================================================================
@@ -535,17 +592,43 @@ JCC: jump_check_circuit PORT MAP (CLK,RST,jz_opcode,state_data_read_fetch_buffer
 SM: state_memory PORT MAP(CLK ,not_taken_address_enable,state_address_write,state_address_read ,
 		output_state , state_data_read);
 
---========================================================================================
---FETCH DECODE BUFFER=====================================================================
---========================================================================================
+
+--FETCH DECODE BUFFER==============================
 
 fdbuff : FD_buffer PORT MAP(CLK, RST, FD_Enable, FD_Flush, FD_d_instruction, FD_q_instruction,
  	FD_d_not_taken_address, FD_q_not_taken_address, FD_d_predicted_state, FD_q_predicted_state,
 	FD_d_state_address, FD_q_state_address);
 
 --========================================================================================
---DECODE EXCUTE BUFFER====================================================================
+--DECODE STAGE ===========================================================================
 --========================================================================================
+
+
+-- Control Unit  ===================================
+
+CU: control_unit
+port MAP (      RST, opcode,
+		alu_operation,
+		one_src, input_port,
+		enable_temp2,
+		cu_s0,cu_s1,			--alu ops
+		enable_mem, read_write,		--memory ops
+		enable_stack, push_pop,
+		mem_to_pc, clr_rbit,
+		clr_int,
+		write_back, swap,		--write back ops
+		rti_pop_flags, int_push_flags, 
+		output_port);
+
+
+-- Register Files  ==================================
+RF: register_files 
+PORT MAP(	CLK,RST,MW_q_WB_signals(4),MW_q_WB_signals(3),write_port_data1,write_port_data2,
+	    	write_port_address1,write_port_address2, 
+	    	read_port_data1,read_port_data2,read_port_data3,
+	    	read_port_address1,read_port_address2,read_port_address3);
+
+--DECODE EXECUTE BUFFER ==============================
 DE_d_WB_signals <= write_back&swap&output_port&rti_pop_flags&int_push_flags;
 DE_d_memory_signals <= enable_mem&read_write&enable_stack&push_pop&mem_to_pc&clr_rbit&clr_int;
 DE_d_excute_signals <= alu_operation&input_port&one_src&cu_s1&cu_s0&enable_temp2;
@@ -555,24 +638,25 @@ debuff : DE_buffer PORT MAP(CLK, RST,DE_d_WB_signals,DE_q_WB_signals,
 	DE_d_excute_signals , DE_q_excute_signals, DE_d_data1, DE_q_data1, DE_d_data2, DE_q_data2,
 	DE_d_Rsrc1, DE_q_Rsrc1, DE_d_Rsrc2, DE_q_Rsrc2, DE_d_Rdst1, DE_q_Rdst1, DE_d_Rdst2, DE_q_Rdst2);
 
---========================================================================================
---EXECUTE MEMORY BUFFER ========================================================================
---========================================================================================
+
+--===========================================================================================
+--EXECUTE STAGE =============================================================================
+--===========================================================================================
+ALU1: ALU
+    port map(
+	opcode,
+        DE_q_data1, DE_q_data2,
+	EM_d_data1,
+        flag_out,flag_in);
+
+
+--EXECUTE MEMORY BUFFER =============================
 embuff : EM_buffer
 PORT MAP(
 	Clk,RST,DE_q_WB_signals, EM_q_WB_signals,DE_q_memory_signals,EM_q_memory_signals,
 	EM_d_data1,EM_q_data1,EM_d_data2,EM_q_data2,EM_d_Rdst1,EM_q_Rdst1,EM_d_Rdst2,EM_q_Rdst2
 	);
-
---===========================================================================================
---MEMORY WRITE BACK BUFFER===================================================================
---===========================================================================================
-mwbuff : MW_buffer
-PORT MAP(
-	Clk,RST,MW_d_WB_signals, MW_q_WB_signals,
-	MW_d_data1,MW_q_data1,MW_d_data2,MW_q_data2,MW_d_Rdst1,MW_q_Rdst1,MW_d_Rdst2,MW_q_Rdst2
-	);
---========================================================================================
+--===================================================
 -- Memory Signals Order
 -- clr_int 0
 -- clr_rbit 1
@@ -581,24 +665,21 @@ PORT MAP(
 -- enable_stack 4
 -- read_write 5
 -- enable_mem 6
---========================================================================================
--- Write Back Signals Order
--- int_push_flags 0
--- rti_pop_flags 1
--- output_port 2
--- swap 3
--- write_back 4
---========================================================================================
 
 --========================================================================================
---STACK POINTER CONNECTIONS ==============================================================
+--MEMORY STAGE ===========================================================================
 --========================================================================================
+
+-- RAM  ============================================
+RAM1: RAM
+PORT MAP(	ram_write,ram_read, ram_address,ram_data_in,ram_data_out);
+
 connect_memory_pc <= EM_q_memory_signals(2);
 sp: stack_pointer
 	PORT MAP( CLK,RST,EM_q_memory_signals(3),EM_q_memory_signals(4),sp_out
 	);
---TODO: what is M_sel? is it enable_stack? What Data ? is it data2?
-m_sel<=EM_q_memory_signals(4);
+-- RAM Address handling
+m_sel<=EM_q_memory_signals(6);
 ram_in_mux2x1_1: mux_2X1
 	GENERIC MAP(32)
 	PORT MAP(
@@ -620,18 +701,71 @@ ram_in_mux2x1_3: mux_2X1
 		ram_address,
 		RST
 	);
--- ram_out_mux2x1_1: mux_2X1
--- 	GENERIC MAP(32)
--- 	PORT MAP(
--- 		EM_q_data1,ram_data_out,
--- 		MW_d_data1,
--- 		--TODO:is the selector enable_memory???
--- 		EM_q_memory_signals(6)
--- 	);
+
+ram_out_mux2x1_1: mux_2X1
+ 	GENERIC MAP(32)
+ 	PORT MAP(
+ 		EM_q_data1,ram_data_out,
+ 		MW_d_data1,
+ 		EM_q_memory_signals(6)
+ 	);
+-- RAM Data in handling
+flags: flag_reg 
+	PORT MAP(
+	 	CLK,RST, flag_enable,
+		flag_in,flag_out
+);
+temp2_register : registerr 
+	GENERIC MAP (32)
+	PORT MAP( 	
+		CLK,RST,
+		instruction_address, --REVIEW: input data correct ?
+		temp2_dataout,	
+	 	enable_temp2
+);
+--datain_ram: RAM_datain 
+--	GENERIC (32);
+-- 	port(
+--     		EM_q_data1,temp2_dataout,flag_out, -- Select one of these to put in the ram
+     		--enable1,enable2: TODO put enables to temp2 and flag
+--     		ram_data_in
+--  	);
 ram_read <= (EM_q_memory_signals(6) and not EM_q_memory_signals(5)) or RST;
 ram_write <= EM_q_memory_signals(6) and EM_q_memory_signals(5);
 address_loaded_from_memory<=ram_data_out;
 clr_int_EM <= EM_q_memory_signals(0);
 clr_rbit_EM <= EM_q_memory_signals(1);
+
+--MEMORY WRITE BACK BUFFER===========================
+mwbuff : MW_buffer
+PORT MAP(
+	Clk,RST,MW_d_WB_signals, MW_q_WB_signals,
+	MW_d_data1,MW_q_data1,MW_d_data2,MW_q_data2,MW_d_Rdst1,MW_q_Rdst1,MW_d_Rdst2,MW_q_Rdst2
+	);
+--===================================================
+-- Write Back Signals Order
+-- int_push_flags 0
+-- rti_pop_flags 1
+-- output_port 2
+-- swap 3
+-- write_back 4
+--===================================================
+
+--===========================================================================================
+--WRITE BACK STAGE===========================================================================
+--===========================================================================================
+write_port_data1 <= MW_q_data1;
+write_port_address1 <= MW_q_Rdst1;
+write_port_data2 <= MW_q_data2;
+write_port_address2 <= MW_q_Rdst2;
+
+output_port_register : registerr 
+	GENERIC MAP (32)
+	PORT MAP( 	
+		CLK,RST,
+		MW_q_data1, 
+		output_port_data,	
+	 	MW_q_WB_signals(2)
+);
 
 END a_main;
