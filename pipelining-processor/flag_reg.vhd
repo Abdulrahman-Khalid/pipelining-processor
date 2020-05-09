@@ -5,8 +5,8 @@ USE IEEE.std_logic_1164.all;
 ENTITY flag_reg IS
 PORT( Clk,Reset, Enable : IN std_logic;
 
-	    d_flags : IN std_logic_vector(3 DOWNTO 0);
-	    q_flags : OUT std_logic_vector(3 DOWNTO 0)
+	    d_flags : IN std_logic_vector(2 DOWNTO 0);
+	    q_flags : OUT std_logic_vector(2 DOWNTO 0)
 );
 	
 END flag_reg;
