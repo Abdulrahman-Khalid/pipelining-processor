@@ -366,6 +366,7 @@ signal  jump_enable, not_taken_address_enable,jz_opcode,call_opcode,jmp_opcode, 
 --interrupt and return one bit buffers output signals
 	int_bit_out,int_push_bit_out,rbit_out,
 	ret_opcode,rti_opcode,rti_or_ret,
+	clr_int_EM,clr_rbit_EM,
 ---------------------------------------------------------------------------------------
 --CONTOL UNIT OUTPUT SIGNALS
 	one_src, 	--One source signal
@@ -450,11 +451,12 @@ ret_opcode<= (opcode(4)and (not opcode(3)) and  opcode(2) and (not opcode(1)) an
 rti_or_ret<= ret_opcode or rti_opcode;
 ----------------------------------------------------------------------------------------
 INT_BIT: one_bit_buffer
-PORT MAP(	CLK,RST,INT,clr_int,int_bit_out);
+PORT MAP(	CLK,RST,INT,clr_int_EM,int_bit_out);
 RBIT: one_bit_buffer
-PORT MAP(	CLK,RST,rti_or_ret, clr_rbit,rbit_out);
-INT_PUSH_BIT: one_bit_buffer
-PORT MAP(	CLK,RST,int_push_flags,int_push_bit_out,int_push_bit_out);
+PORT MAP(	CLK,RST,rti_or_ret, clr_rbit_EM,rbit_out);
+--TODO change int_push_flags to take from WB stage
+--INT_PUSH_BIT: one_bit_buffer 
+--PORT MAP(	CLK,RST,int_push_flags,int_push_bit_out_WB,int_push_bit_out);
 
 -- =====================================================================================
 -- Control Unit  =======================================================================
@@ -604,9 +606,18 @@ ram_in_mux2x1_3: mux_2X1
 		ram_address,
 		RST
 	);
+-- ram_out_mux2x1_1: mux_2X1
+-- 	GENERIC MAP(32)
+-- 	PORT MAP(
+-- 		EM_q_data1,ram_data_out,
+-- 		MW_d_data1,
+-- 		--TODO:is the selector enable_memory???
+-- 		EM_q_memory_signals(6)
+-- 	);
 ram_read <= (EM_q_memory_signals(6) and not EM_q_memory_signals(5)) or RST;
 ram_write <= EM_q_memory_signals(6) and EM_q_memory_signals(5);
 address_loaded_from_memory<=ram_data_out;
-
+clr_int_EM <= EM_q_memory_signals(0);
+clr_rbit_EM <= EM_q_memory_signals(1);
 
 END a_main;
