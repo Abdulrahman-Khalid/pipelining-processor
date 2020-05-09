@@ -475,6 +475,27 @@ SIGNAL MW_d_data1, MW_q_data1 : std_logic_vector(31 DOWNTO 0);
 SIGNAL MW_d_data2, MW_q_data2 : std_logic_vector(31 DOWNTO 0);
 SIGNAL MW_d_Rdst1, MW_q_Rdst1 : std_logic_vector(2 DOWNTO 0);
 SIGNAL MW_d_Rdst2, MW_q_Rdst2 : std_logic_vector(2 DOWNTO 0);
+----------------------------------------------------------------------------------------
+--FORWARDING UNIT SIGNALS
+
+SIGNAL ALU_F_Rdst1 : std_logic;
+SIGNAL ALU_F_Rdst2 : std_logic;
+SIGNAL MEM_F_Rdst1 : std_logic;
+SIGNAL MEM_F_Rdst2 : std_logic;
+
+--OUTPUT SIGNALS FOR FORWARDING FROM ALU TO ALU
+SIGNAL ALU_ALU_Rdst1_Rsrc1 : std_logic;
+SIGNAL ALU_ALU_Rdst1_Rsrc2 : std_logic;
+SIGNAL ALU_ALU_Rdst2_Rsrc1 : std_logic;
+SIGNAL ALU_ALU_Rdst2_Rsrc2 : std_logic;
+
+--OUTPUT SIGNALS FOR FORWARDING FROM MEMORY TO ALU
+SIGNAL MEM_ALU_Rdst1_Rsrc1 : std_logic;
+SIGNAL MEM_ALU_Rdst1_Rsrc2 : std_logic;
+SIGNAL MEM_ALU_Rdst2_Rsrc1 : std_logic;
+SIGNAL MEM_ALU_Rdst2_Rsrc2 : std_logic;
+
+SIGNAL ALU_in1, ALU_in2, FSEL_out : std_logic_vector(31 DOWNTO 0);
 -- =====================================================================================
 -- BEGINING of the progrom  ============================================================
 -- =====================================================================================
@@ -511,36 +532,48 @@ PORT MAP(	CLK,RST,rti_or_ret, clr_rbit_EM,rbit_out);
 --         insert_bubble, flush);
 --stall <= flush or insert_bubble;
 
---FU: forwarding_unit 
---PORT( 
---	EM_q_Rdst1, EM_q_Rdst2, EM_q_WB_signals(4), EM_q_WB_signals(3), EM_q_memory_signals(6)
---	MW_q_Rdst1, MW_q_Rdst2, MW_q_WB_signals(4), MW_q_WB_signals(3),
---	rom_data_out,
---	DE_Rsrc1 : IN std_logic_vector(2 DOWNTO 0);
---	DE_Rsrc2 : IN std_logic_vector(2 DOWNTO 0);
---	DE_WB_signal : IN std_logic;
---	DE_swap_signal : IN std_logic;
---	DE_memory_signal : IN std_logic;
---	DE_oneSrc_signal : IN std_logic;
+FU: forwarding_unit 
+PORT MAP( 
+	EM_q_Rdst1, EM_q_Rdst2, EM_q_WB_signals(4), EM_q_WB_signals(3), EM_q_memory_signals(6),
+	MW_q_Rdst1, MW_q_Rdst2, MW_q_WB_signals(4), MW_q_WB_signals(3),
+	rom_data_out,
+	DE_q_Rsrc1,
+	DE_q_Rsrc2,
+	DE_q_WB_signals(4),
+	DE_q_WB_signals(3),
+	DE_q_memory_signals(6),
+	DE_q_excute_signals(3),
 
-	--OUTPUT SIGNALS FOR FORWARDING TO FETCH
---	ALU_F_Rdst1 : OUT std_logic;
---	ALU_F_Rdst2 : OUT std_logic;
---	MEM_F_Rdst1 : OUT std_logic;
---	MEM_F_Rdst2 : OUT std_logic;
+	ALU_F_Rdst1,
+	ALU_F_Rdst2,
+	MEM_F_Rdst1,
+	MEM_F_Rdst2,
 
-	--OUTPUT SIGNALS FOR FORWARDING FROM ALU TO ALU
---	ALU_ALU_Rdst1_Rsrc1 : OUT std_logic;
---	ALU_ALU_Rdst1_Rsrc2 : OUT std_logic;
---	ALU_ALU_Rdst2_Rsrc1 : OUT std_logic;
---	ALU_ALU_Rdst2_Rsrc2 : OUT std_logic;
+	ALU_ALU_Rdst1_Rsrc1,
+	ALU_ALU_Rdst1_Rsrc2,
+	ALU_ALU_Rdst2_Rsrc1,
+	ALU_ALU_Rdst2_Rsrc2,
 
-	--OUTPUT SIGNALS FOR FORWARDING FROM MEMORY TO ALU
---	MEM_ALU_Rdst1_Rsrc1 : OUT std_logic;
---	MEM_ALU_Rdst1_Rsrc2 : OUT std_logic;
---	MEM_ALU_Rdst2_Rsrc1 : OUT std_logic;
---	MEM_ALU_Rdst2_Rsrc2 : OUT std_logic
+	MEM_ALU_Rdst1_Rsrc1,
+	MEM_ALU_Rdst1_Rsrc2,
+	MEM_ALU_Rdst2_Rsrc1,
+	MEM_ALU_Rdst2_Rsrc2
+);
+--==========================================================
+--FSEL: fetch_Rdst_selector
+--PORT MAP(EM_q_data1, EM_q_data2, MW_q_data1, MW_q_data2, 	,ALU_F_Rdst1, ALU_F_Rdst2, MEM_F_Rdst1,
+--	MEM_F_Rdst2, FSEL_out
 --);
+
+ALUSEL1: ALU_in1_selector
+PORT MAP(EM_q_data1, EM_q_data2, MW_q_data1, MW_q_data2, DE_q_data1, ALU_ALU_Rdst1_Rsrc1, ALU_ALU_Rdst2_Rsrc1,
+	MEM_ALU_Rdst1_Rsrc1,MEM_ALU_Rdst2_Rsrc1, ALU_in1
+);
+
+ALUSEL2: ALU_in2_selector
+PORT MAP(EM_q_data1, EM_q_data2, MW_q_data1, MW_q_data2, DE_q_data2, ALU_ALU_Rdst1_Rsrc2, ALU_ALU_Rdst2_Rsrc2,
+	MEM_ALU_Rdst1_Rsrc2,MEM_ALU_Rdst2_Rsrc2, ALU_in2
+);
 -- =====================================================================================
 -- FETCH STAGE  ========================================================================
 -- =====================================================================================
