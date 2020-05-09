@@ -13,9 +13,9 @@ PORT( CLK,RST : IN std_logic;
 END sp_register;
 ARCHITECTURE sp_register_nbits OF sp_register IS
 BEGIN
-
 PROCESS (RST,d,CLK,enable)
 	BEGIN
+	
 		IF(RST = '1') THEN
 			q<= std_logic_vector(to_unsigned(2**20-1, q'length));
 		ELSIF (rising_edge(CLK) and enable='1') THEN
@@ -49,15 +49,6 @@ ARCHITECTURE stack_pointer_arch OF stack_pointer IS
 			enable: in std_logic
 			);
 	END COMPONENT;
-
-	COMPONENT mux_2X1 IS
-	GENERIC ( n : integer := 32);
-	PORT(
-		input1,input2 : IN std_logic_vector(n-1 DOWNTO 0);
-		output	      : OUT std_logic_vector(n-1 DOWNTO 0);
-		selector      : IN std_logic
-	);	
-	END COMPONENT;
 	COMPONENT mux_4X1 is
 	GENERIC ( n : integer := 32);
  	port(
@@ -75,7 +66,6 @@ sp_p2 <= (sp_reg_output + 2);
 sp_m2 <= (sp_reg_output - 2);
 mux1: mux_4X1
 PORT MAP(sp_reg_output,sp_reg_output,sp_p2,sp_m2,push_pop,enable_stack,sp_reg_input);
-mux2: mux_2X1
-PORT MAP(sp_reg_output,sp_p2,sp_out,push_pop);
-	
+mux2: mux_4X1
+PORT MAP(sp_reg_output,sp_reg_output,sp_p2,sp_reg_output,push_pop,enable_stack,sp_out);
 END stack_pointer_arch;

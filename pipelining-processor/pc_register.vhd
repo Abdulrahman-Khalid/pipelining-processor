@@ -17,9 +17,7 @@ BEGIN
 
 PROCESS (d,CLK,RST,enable)
 	BEGIN
-		IF RST = '1' THEN
-			q <= std_logic_vector(to_unsigned(codeSegmentStart, q'length));
-		ELSIF (CLK = '1' and enable='1') THEN
+		IF ((CLK = '1' and enable='1') or RST = '1') THEN
 			q <= d;
 		END IF;
 	END PROCESS;

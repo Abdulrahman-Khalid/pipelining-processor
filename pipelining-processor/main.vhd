@@ -30,6 +30,24 @@ COMPONENT RAM IS
 		dataIn  : IN  std_logic_vector(wordSize - 1 DOWNTO 0);
 		dataOut  : OUT  std_logic_vector(wordSize - 1 DOWNTO 0));
 END COMPONENT RAM;
+-- Define Mux 2x1
+COMPONENT mux_2X1 IS
+	GENERIC ( n : integer := 32);
+	PORT(
+		input1,input2 : IN std_logic_vector(n-1 DOWNTO 0);
+		output	      : OUT std_logic_vector(n-1 DOWNTO 0);
+		selector      : IN std_logic
+	);	
+END COMPONENT;
+-- Define Stack Pointer
+COMPONENT stack_pointer IS
+	GENERIC ( n : integer := 32);
+	PORT( CLK,RST,push_pop,enable_stack
+		      : IN std_logic;
+		    sp_out
+		      : OUT std_logic_vector(n-1 DOWNTO 0)
+	);
+END COMPONENT;
 -- Define PC register
 COMPONENT pc_register IS
 GENERIC ( n : integer := 32;
@@ -51,8 +69,7 @@ COMPONENT control_unit is
 		alu_operation: out std_logic_vector(3 DOWNTO 0);
 		one_src, input_port,
 		enable_temp2,
-           	sel_alu,sel_data1,		--alu ops
-		sel_data2,sel_inputport,
+		cu_s0,cu_s1,			--aluops
 		enable_mem, read_write,		--memory ops
 		enable_stack, push_pop,
 		mem_to_pc, clr_rbit,
@@ -338,6 +355,9 @@ signal ram_address : std_logic_vector(RAM_ADDRESS_WIDTH-1 DOWNTO 0);
 signal rom_address :  std_logic_vector(ROM_ADDRESS_WIDTH - 1 DOWNTO 0);
 signal ram_data_in,ram_data_out : std_logic_vector( 2*WORD_SIZE - 1 DOWNTO 0);
 signal rom_data_out : std_logic_vector(WORD_SIZE - 1 DOWNTO 0);
+---------------------------------------------------------------------------------------
+signal sp_out,m_mux1_out,m_mux2_out : std_logic_vector(2*WORD_SIZE-1 DOWNTO 0);
+signal M_sel : std_logic;
 
 ---------------------------------------------------------------------------------------
 signal  jump_enable, not_taken_address_enable,jz_opcode,call_opcode,jmp_opcode, zero_flag_bit, 
@@ -351,11 +371,9 @@ signal  jump_enable, not_taken_address_enable,jz_opcode,call_opcode,jmp_opcode, 
 	one_src, 	--One source signal
 	input_port, 	--Input port used signal
 	enable_temp2, 	--Enable temp2 signal
---Execution Stage mux output
-        sel_alu,	--Select ALU signal
-	sel_data1,	--Select Data1 signal
-	sel_data2,	--Select Data2 signal
-	sel_inputport,	--Select input port (same as input_port but this one is instead of the output of the mux, I left it to prevent confusion as the 2 exist in the document)
+--Execution Stage mux input
+	cu_s0,		--Selector for the mux  S0
+	cu_s1,		--Selector for the mux  S1
 --memory ops
 	enable_mem,	--Enables ROM Memory module
 	read_write,	--1 for write, 0 for read
@@ -399,8 +417,14 @@ SIGNAL DE_d_Rsrc1, DE_q_Rsrc1 : std_logic_vector(2 DOWNTO 0);
 SIGNAL DE_d_Rsrc2, DE_q_Rsrc2 : std_logic_vector(2 DOWNTO 0);
 SIGNAL DE_d_Rdst1, DE_q_Rdst1 : std_logic_vector(2 DOWNTO 0);
 SIGNAL DE_d_Rdst2, DE_q_Rdst2 : std_logic_vector(2 DOWNTO 0);
-
-
+----------------------------------------------------------------------------------------
+--EXECUTE MEMORY BUFFER SIGNALS
+SIGNAL EM_q_WB_signals : std_logic_vector(4 DOWNTO 0);
+SIGNAL EM_q_memory_signals : std_logic_vector(6 DOWNTO 0); 
+SIGNAL EM_d_data1, EM_q_data1 : std_logic_vector(31 DOWNTO 0);
+SIGNAL EM_d_data2, EM_q_data2 : std_logic_vector(31 DOWNTO 0);
+SIGNAL EM_d_Rdst1, EM_q_Rdst1 : std_logic_vector(2 DOWNTO 0);
+SIGNAL EM_d_Rdst2, EM_q_Rdst2 : std_logic_vector(2 DOWNTO 0);
 -- =====================================================================================
 -- BEGINING of the progrom  ============================================================
 -- =====================================================================================
@@ -441,8 +465,7 @@ port MAP (      RST, OPCODE,
 		alu_operation,
 		one_src, input_port,
 		enable_temp2,
-           	sel_alu,sel_data1,		--alu ops
-		sel_data2,sel_inputport,
+		cu_s0,cu_s1,			--alu ops
 		enable_mem, read_write,		--memory ops
 		enable_stack, push_pop,
 		mem_to_pc, clr_rbit,
@@ -474,6 +497,13 @@ PC : pc_register PORT MAP(CLK,RST,address_to_pc,instruction_address,'1');
 
 INC: incrementor PORT MAP(CLK,RST,instruction_address,incremented_pc,'1');
 
+-- ROM connections =====================================================================
+rom_read<='1';
+rom_address<=instruction_address(10 downto 0);
+mux_rom_fd_int: mux_2X1
+GENERIC MAP(16)
+PORT MAP(rom_data_out,"1011100000000000",FD_d_instruction,int_bit_out);
+opcode<=FD_d_instruction(15 downto 11);
 -- =====================================================================================
 -- DYNAMIC PREDICTION FOR JUMP INSTRUCTION =============================================
 -- =====================================================================================
@@ -509,12 +539,74 @@ fdbuff : FD_buffer PORT MAP(CLK, RST, FD_Enable, FD_Flush, FD_d_instruction, FD_
 --========================================================================================
 DE_d_WB_signals <= write_back&swap&output_port&rti_pop_flags&int_push_flags;
 DE_d_memory_signals <= enable_mem&read_write&enable_stack&push_pop&mem_to_pc&clr_rbit&clr_int;
-DE_d_excute_signals <= alu_operation&input_port&one_src&"00"&enable_temp2;
+DE_d_excute_signals <= alu_operation&input_port&one_src&cu_s1&cu_s0&enable_temp2;
 
 debuff : DE_buffer PORT MAP(CLK, RST,DE_d_WB_signals,DE_q_WB_signals,
 	DE_d_memory_signals , DE_q_memory_signals,
 	DE_d_excute_signals , DE_q_excute_signals, DE_d_data1, DE_q_data1, DE_d_data2, DE_q_data2,
 	DE_d_Rsrc1, DE_q_Rsrc1, DE_d_Rsrc2, DE_q_Rsrc2, DE_d_Rdst1, DE_q_Rdst1, DE_d_Rdst2, DE_q_Rdst2);
+
+--========================================================================================
+--EXECUTE MEMORY BUFFER ========================================================================
+--========================================================================================
+embuff : EM_buffer
+PORT MAP(
+	Clk,RST,DE_q_WB_signals, EM_q_WB_signals,DE_q_memory_signals,EM_q_memory_signals,
+	EM_d_data1,EM_q_data1,EM_d_data2,EM_q_data2,EM_d_Rdst1,EM_q_Rdst1,EM_d_Rdst2,EM_q_Rdst2
+	);
+
+
+--========================================================================================
+-- Memory Signals Order
+-- clr_int 0
+-- clr_rbit 1
+-- mem_to_pc 2
+-- push_pop 3
+-- enable_stack 4
+-- read_write 5
+-- enable_mem 6
+--========================================================================================
+-- Write Back Signals Order
+-- int_push_flags 0
+-- rti_pop_flags 1
+-- output_port 2
+-- swap 3
+-- write_back 4
+--========================================================================================
+
+--========================================================================================
+--STACK POINTER CONNECTIONS ==============================================================
+--========================================================================================
+connect_memory_pc <= EM_q_memory_signals(2);
+sp: stack_pointer
+	PORT MAP( CLK,RST,EM_q_memory_signals(3),EM_q_memory_signals(4),sp_out
+	);
+--TODO: what is M_sel? is it enable_stack? What Data ? is it data2?
+m_sel<=EM_q_memory_signals(4);
+ram_in_mux2x1_1: mux_2X1
+	GENERIC MAP(32)
+	PORT MAP(
+		EM_q_data2,sp_out,
+		m_mux1_out,
+		m_sel
+	);	
+ram_in_mux2x1_2: mux_2X1
+	GENERIC MAP(32)
+	PORT MAP(
+		m_mux1_out,"00000000000000000000000000000010",
+		m_mux2_out,
+		clr_int
+	);
+ram_in_mux2x1_3: mux_2X1
+	GENERIC MAP(32)
+	PORT MAP(
+		m_mux2_out,"00000000000000000000000000000000",
+		ram_address,
+		RST
+	);
+ram_read <= (EM_q_memory_signals(6) and not EM_q_memory_signals(5)) or RST;
+ram_write <= EM_q_memory_signals(6) and EM_q_memory_signals(5);
+address_loaded_from_memory<=ram_data_out;
 
 
 END a_main;

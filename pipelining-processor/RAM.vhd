@@ -4,7 +4,7 @@ USE IEEE.numeric_std.all;
 use STD.TEXTIO.all;
 
 ENTITY RAM IS
-	GENERIC (wordSize : integer := 16; addressWidth: integer := 32; RAMSize: integer := 2**20-1); --2,147,483,647 == 2^31-1
+	GENERIC (wordSize : integer := 16; addressWidth: integer := 32; RAMSize: integer := 2**20-1; RAMActualWidth :integer :=20);
 	PORT(	
 		W  : IN std_logic;
 		R  : IN std_logic;
@@ -56,11 +56,11 @@ BEGIN
 PROCESS(W, R,address) IS
 	BEGIN
 	IF W = '1' THEN  
-		RAM(to_integer(unsigned(address(30 downto 0)))) <= dataIn(15 downto 0);
-		RAM(1+to_integer(unsigned(address(30 downto 0)))) <= dataIn(31 downto 16);
+		RAM(to_integer(unsigned(address(RAMActualWidth - 1 downto 0)))) <= dataIn(15 downto 0);
+		RAM(1+to_integer(unsigned(address(RAMActualWidth - 1 downto 0)))) <= dataIn(31 downto 16);
 	ELSIF R = '1' THEN
-		dataOut(15 downto 0) <= RAM(to_integer(unsigned(address(30 downto 0))));
-		dataOut(31 downto 16) <= RAM(1+to_integer(unsigned(address(30 downto 0))));
+		dataOut(15 downto 0) <= RAM(to_integer(unsigned(address(RAMActualWidth - 1 downto 0))));
+		dataOut(31 downto 16) <= RAM(1+to_integer(unsigned(address(RAMActualWidth - 1 downto 0))));
 	END IF;
 END PROCESS;
 END RAM_arch;
