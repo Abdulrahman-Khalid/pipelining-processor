@@ -426,6 +426,13 @@ SIGNAL EM_d_data1, EM_q_data1 : std_logic_vector(31 DOWNTO 0);
 SIGNAL EM_d_data2, EM_q_data2 : std_logic_vector(31 DOWNTO 0);
 SIGNAL EM_d_Rdst1, EM_q_Rdst1 : std_logic_vector(2 DOWNTO 0);
 SIGNAL EM_d_Rdst2, EM_q_Rdst2 : std_logic_vector(2 DOWNTO 0);
+----------------------------------------------------------------------------------------
+--MEMORY WRITEBACK BUFFER SIGNALS
+SIGNAL MW_d_WB_signals, MW_q_WB_signals : std_logic_vector(4 DOWNTO 0);
+SIGNAL MW_d_data1, MW_q_data1 : std_logic_vector(31 DOWNTO 0);
+SIGNAL MW_d_data2, MW_q_data2 : std_logic_vector(31 DOWNTO 0);
+SIGNAL MW_d_Rdst1, MW_q_Rdst1 : std_logic_vector(2 DOWNTO 0);
+SIGNAL MW_d_Rdst2, MW_q_Rdst2 : std_logic_vector(2 DOWNTO 0);
 -- =====================================================================================
 -- BEGINING of the progrom  ============================================================
 -- =====================================================================================
@@ -557,7 +564,14 @@ PORT MAP(
 	EM_d_data1,EM_q_data1,EM_d_data2,EM_q_data2,EM_d_Rdst1,EM_q_Rdst1,EM_d_Rdst2,EM_q_Rdst2
 	);
 
-
+--===========================================================================================
+--MEMORY WRITE BACK BUFFER===================================================================
+--===========================================================================================
+mwbuff : MW_buffer
+PORT MAP(
+	Clk,RST,MW_d_WB_signals, MW_q_WB_signals,
+	MW_d_data1,MW_q_data1,MW_d_data2,MW_q_data2,MW_d_Rdst1,MW_q_Rdst1,MW_d_Rdst2,MW_q_Rdst2
+	);
 --========================================================================================
 -- Memory Signals Order
 -- clr_int 0
