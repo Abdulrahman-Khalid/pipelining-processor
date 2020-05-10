@@ -13,8 +13,8 @@ PORT( Clk,Reset, Enable, Flush : IN std_logic;
 	    d_predicted_state : IN std_logic_vector(1 DOWNTO 0);
 	    q_predicted_state : OUT std_logic_vector(1 DOWNTO 0);
 
-	    d_state_address : IN std_logic_vector(1 DOWNTO 0);
-	    q_state_address : OUT std_logic_vector(1 DOWNTO 0)
+	    d_state_address : IN std_logic_vector(7 DOWNTO 0);
+	    q_state_address : OUT std_logic_vector(7 DOWNTO 0)
 );
 	
 END FD_buffer;

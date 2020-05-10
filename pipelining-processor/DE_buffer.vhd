@@ -7,8 +7,8 @@ PORT( Clk,Reset : IN std_logic;
 	    d_WB_signals : IN std_logic_vector(4 DOWNTO 0);
 	    q_WB_signals : OUT std_logic_vector(4 DOWNTO 0);
 
-	    d_memory_signals : IN std_logic_vector(6 DOWNTO 0);
-	    q_memory_signals : OUT std_logic_vector(6 DOWNTO 0);
+	    d_memory_signals : IN std_logic_vector(7 DOWNTO 0);
+	    q_memory_signals : OUT std_logic_vector(7 DOWNTO 0);
 
 	    d_excute_signals : IN std_logic_vector(8 DOWNTO 0);
 	    q_excute_signals : OUT std_logic_vector(8 DOWNTO 0);

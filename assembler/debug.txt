@@ -11,78 +11,25 @@ rti
 100
 .org 10
 nop
-not r1
-inc r2
-dec r3
-dec r0
-out r3
-in r4
-jz r5
-jmp r2
-call r6
-ret
-rti
-push r7
-pop r7
-ldm r2, ffff
-ldd r1, fffff
-std r3, fffff
-swap r6, r7
-iadd r2, r1, ffff
-shl r7, 1f
-shr r6, 0
-shr r6, f
-add r1, r2, r3
-sub r1, r2, r3
-and r1, r2, r3
-or r1, r2, r3
+inc r1
 nop
-rti
-ret
-setc
-clrc
-hlt
+nop
+nop
+nop
+dec r1
 ----------------------------- END CODE -------------------------------
 ----------------------------- START INSTUCTION INFORMATION LIST -----------------------------
 (instruction = 10) (instruction type = hex instruction) (address in hex = 0x0) (instruction code = 0000000000010000)
 (instruction = 100) (instruction type = hex instruction) (address in hex = 0x2) (instruction code = 0000000100000000)
 (instruction = 100) (instruction type = hex instruction) (address in hex = 0x2) (instruction code = 0000000100000000)
 (instruction = nop) (instruction type = no operand instruction) (address in hex = 0x10) (instruction code = 0000000000000000)
-(instruction = not r1) (instruction type = one operand instruction) (address in hex = 0x11) (instruction code = 0000100000001001)
-(instruction = inc r2) (instruction type = one operand instruction) (address in hex = 0x12) (instruction code = 0001000000010010)
-(instruction = dec r3) (instruction type = one operand instruction) (address in hex = 0x13) (instruction code = 0001100000011011)
-(instruction = dec r0) (instruction type = one operand instruction) (address in hex = 0x14) (instruction code = 0001100000000000)
-(instruction = out r3) (instruction type = one operand instruction) (address in hex = 0x15) (instruction code = 1000000000011011)
-(instruction = in r4) (instruction type = one operand instruction) (address in hex = 0x16) (instruction code = 1000100000000100)
-(instruction = jz r5) (instruction type = one operand instruction) (address in hex = 0x17) (instruction code = 1001000000000101)
-(instruction = jmp r2) (instruction type = one operand instruction) (address in hex = 0x18) (instruction code = 1001100000000010)
-(instruction = call r6) (instruction type = one operand instruction) (address in hex = 0x19) (instruction code = 1010000000000110)
-(instruction = ret) (instruction type = no operand instruction) (address in hex = 0x1a) (instruction code = 1010100000000000)
-(instruction = rti) (instruction type = no operand instruction) (address in hex = 0x1b) (instruction code = 1011000000000000)
-(instruction = push r7) (instruction type = one operand instruction) (address in hex = 0x1c) (instruction code = 1100000000111111)
-(instruction = pop r7) (instruction type = one operand instruction) (address in hex = 0x1d) (instruction code = 1100100000000111)
-(instruction = ldm r2, ffff) (instruction type = ldm instruction) two addresses in memory
- (1- address in hex = 0x1e , 2- address in hex = 0x1f) (instruction code = 1101000000000010 and 1111111111111111)
-(instruction = ldd r1, fffff) (instruction type = ldd or std instruction) two addresses in memory
- (1- address in hex = 0x20 , 2- address in hex = 0x21) (instruction code = 1101101111000001 and 1111111111111111)
-(instruction = std r3, fffff) (instruction type = ldd or std instruction) two addresses in memory
- (1- address in hex = 0x22 , 2- address in hex = 0x23) (instruction code = 1110001111000011 and 1111111111111111)
-(instruction = swap r6, r7) (instruction type = swap operand instruction) (address in hex = 0x24) (instruction code = 1110100110111111)
-(instruction = iadd r2, r1, ffff) (instruction type = iadd instruction) two addresses in memory
- (1- address in hex = 0x25 , 2- address in hex = 0x26) (instruction code = 0101000000010001 and 1111111111111111)
-(instruction = shl r7, 1f) (instruction type = shift  instruction) (address in hex = 0x27) (instruction code = 0100011111111111)
-(instruction = shr r6, 0) (instruction type = shift  instruction) (address in hex = 0x28) (instruction code = 0100100000110110)
-(instruction = shr r6, f) (instruction type = shift  instruction) (address in hex = 0x29) (instruction code = 0100101111110110)
-(instruction = add r1, r2, r3) (instruction type = three operand instruction) (address in hex = 0x2a) (instruction code = 0010000001010011)
-(instruction = sub r1, r2, r3) (instruction type = three operand instruction) (address in hex = 0x2b) (instruction code = 0010100001010011)
-(instruction = and r1, r2, r3) (instruction type = three operand instruction) (address in hex = 0x2c) (instruction code = 0011000001010011)
-(instruction = or r1, r2, r3) (instruction type = three operand instruction) (address in hex = 0x2d) (instruction code = 0011100001010011)
-(instruction = nop) (instruction type = no operand instruction) (address in hex = 0x2e) (instruction code = 0000000000000000)
-(instruction = rti) (instruction type = no operand instruction) (address in hex = 0x2f) (instruction code = 1011000000000000)
-(instruction = ret) (instruction type = no operand instruction) (address in hex = 0x30) (instruction code = 1010100000000000)
-(instruction = setc) (instruction type = set or clr instruction) (address in hex = 0x31) (instruction code = 1111111111111110)
-(instruction = clrc) (instruction type = set or clr instruction) (address in hex = 0x32) (instruction code = 1111111111111101)
-(instruction = hlt) (instruction type = no operand instruction) (address in hex = 0x33) (instruction code = 1111111111111111)
+(instruction = inc r1) (instruction type = one operand instruction) (address in hex = 0x11) (instruction code = 0001000000001001)
+(instruction = nop) (instruction type = no operand instruction) (address in hex = 0x12) (instruction code = 0000000000000000)
+(instruction = nop) (instruction type = no operand instruction) (address in hex = 0x13) (instruction code = 0000000000000000)
+(instruction = nop) (instruction type = no operand instruction) (address in hex = 0x14) (instruction code = 0000000000000000)
+(instruction = nop) (instruction type = no operand instruction) (address in hex = 0x15) (instruction code = 0000000000000000)
+(instruction = dec r1) (instruction type = one operand instruction) (address in hex = 0x16) (instruction code = 0001100000001001)
+(instruction = hlt) (instruction type = no operand instruction) (address in hex = 0x17) (instruction code = 1111111111111111)
 (instruction = pop r3) (instruction type = one operand instruction) (address in hex = 0x100) (instruction code = 1100100000000011)
 (instruction = add r1, r3, r5) (instruction type = three operand instruction) (address in hex = 0x101) (instruction code = 0010000001011101)
 (instruction = rti) (instruction type = no operand instruction) (address in hex = 0x102) (instruction code = 1011000000000000)

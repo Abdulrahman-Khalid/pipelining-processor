@@ -6,9 +6,11 @@ __pycache__
 .idea
 pipelining-processor/work
 inputs/inputTEST.txt
-pipelining-processor/RAM_DATA.txt
+pipelining-processor/out.mem
+assembler/out.mem
 pipelining-processor/transcript
 
+*.mem
 *.wlf
 *.xlsx
 *.vstf

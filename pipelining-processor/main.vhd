@@ -53,6 +53,16 @@ COMPONENT mux_2X1 IS
 		selector      : IN std_logic
 	);	
 END COMPONENT;
+-- Define mux 4X1
+COMPONENT mux_4X1 is
+GENERIC ( n : integer := 32);
+ port(
+ 
+     A,B,C,D : in std_logic_vector(n-1 DOWNTO 0);
+     S0,S1: in STD_LOGIC;
+     Z: out std_logic_vector(n-1 DOWNTO 0)
+  );
+END COMPONENT;
 -- Define Register 
 COMPONENT registerr IS
 GENERIC ( n : integer := 32);
@@ -99,7 +109,7 @@ COMPONENT control_unit is
 		clr_int,
 		write_back, swap,		--write back ops
 		rti_pop_flags, int_push_flags, 
-		output_port
+		output_port,load
 			: out std_logic);
 end COMPONENT;
 -- Define incrementor 
@@ -167,8 +177,8 @@ PORT( Clk,Reset, Enable, Flush : IN std_logic;
 	    d_predicted_state : IN std_logic_vector(1 DOWNTO 0);
 	    q_predicted_state : OUT std_logic_vector(1 DOWNTO 0);
 
-	    d_state_address : IN std_logic_vector(1 DOWNTO 0);
-	    q_state_address : OUT std_logic_vector(1 DOWNTO 0)
+	    d_state_address : IN std_logic_vector(7 DOWNTO 0);
+	    q_state_address : OUT std_logic_vector(7 DOWNTO 0)
 );
 	
 END COMPONENT;
@@ -178,8 +188,8 @@ PORT( Clk,Reset : IN std_logic;
 	    d_WB_signals : IN std_logic_vector(4 DOWNTO 0);
 	    q_WB_signals : OUT std_logic_vector(4 DOWNTO 0);
 
-	    d_memory_signals : IN std_logic_vector(6 DOWNTO 0);
-	    q_memory_signals : OUT std_logic_vector(6 DOWNTO 0);
+	    d_memory_signals : IN std_logic_vector(7 DOWNTO 0);
+	    q_memory_signals : OUT std_logic_vector(7 DOWNTO 0);
 
 	    d_excute_signals : IN std_logic_vector(8 DOWNTO 0);
 	    q_excute_signals : OUT std_logic_vector(8 DOWNTO 0);
@@ -210,8 +220,8 @@ PORT( Clk,Reset : IN std_logic;
 	    d_WB_signals : IN std_logic_vector(4 DOWNTO 0);
 	    q_WB_signals : OUT std_logic_vector(4 DOWNTO 0);
 
-	    d_memory_signals : IN std_logic_vector(6 DOWNTO 0);
-	    q_memory_signals : OUT std_logic_vector(6 DOWNTO 0);
+	    d_memory_signals : IN std_logic_vector(7 DOWNTO 0);
+	    q_memory_signals : OUT std_logic_vector(7 DOWNTO 0);
 
 	    d_data1 : IN std_logic_vector(31 DOWNTO 0);
 	    q_data1 : OUT std_logic_vector(31 DOWNTO 0);
@@ -383,13 +393,24 @@ COMPONENT HDU is
         Rsrc1_F_ID, Rsrc2_F_ID, Rdst1_F_ID, Rdst2_F_ID, Rdst1_ID_E, Rdst2_ID_E, Rdst_E_MEM, Rdst_MEM: in std_logic_vector(n-1 downto 0);
         insert_bubble, flush: out std_logic);
 END COMPONENT;
+
+COMPONENT data2_selector is
+	GENERIC ( n : integer := 32);
+ 	port(
+     		RF_data2,temp_pc: in std_logic_vector(n-1 DOWNTO 0);
+		rom_dataout: in std_logic_vector(15 downto 0);
+		immediate_5bits: in std_logic_vector(4 downto 0);
+		eff: in std_logic_vector(3 downto 0);
+     		opcode: in std_logic_vector(4 downto 0);
+     		Z: out std_logic_vector(n-1 DOWNTO 0));
+end COMPONENT;
 -- =====================================================================================
 -- SIGNALS USED ========================================================================
 -- =====================================================================================
 signal  instruction_address, incremented_pc, address_loaded_from_memory,
-	jump_address , address_to_pc, write_port_data1,write_port_data2,
+	address_to_pc, write_port_data1,write_port_data2,
 	read_port_data1,read_port_data2,read_port_data3,temp2_dataout,
-	output_port_data: std_logic_vector(31 downto 0);
+	output_port_data, alu_output, temp_pc_data: std_logic_vector(31 downto 0);
 ---------------------------------------------------------------------------------------
 signal ram_read,ram_write,rom_read :std_logic;
 signal ram_address : std_logic_vector(RAM_ADDRESS_WIDTH-1 DOWNTO 0);
@@ -401,9 +422,9 @@ signal sp_out,m_mux1_out,m_mux2_out : std_logic_vector(2*WORD_SIZE-1 DOWNTO 0);
 signal m_sel : std_logic;
 signal flag_in,flag_out: std_logic_vector(flagsCount-1 downto 0);
 ---------------------------------------------------------------------------------------
-signal  jump_enable, not_taken_address_enable,jz_opcode,call_opcode,jmp_opcode, zero_flag_bit, 
-        connect_memory_pc, stall, address_loaded_from_memory_enable,flag_enable,
-	insert_bubble, flush,
+signal  jump_enable, not_taken_address_enable,jz_opcode,call_opcode,jmp_opcode, 
+        connect_memory_pc, stall, address_loaded_from_memory_enable,flag_enable, jz_FD_opcode,
+	insert_bubble, flush,branch,
 ---------------------------------------------------------------------------------------
 --interrupt and return one bit buffers output signals
 	int_bit_out,int_push_bit_out,rbit_out,
@@ -430,15 +451,15 @@ signal  jump_enable, not_taken_address_enable,jz_opcode,call_opcode,jmp_opcode, 
 	swap,		--Swap operation
 	rti_pop_flags, 	--Pops flags due to rti
 	int_push_flags, --Pushs flags due to int
-	output_port	--Output port used signal
+	output_port,	--Output port used signal
+	load		--Load signal used with LDD
 	: std_logic;
 signal alu_operation: std_logic_vector(3 DOWNTO 0); -- alu operation used
 ---------------------------------------------------------------------------------------
 
-signal output_state,state_data_read,state_data_read_fetch_buffer: std_logic_vector(1 downto 0);
-signal state_address_write,state_address_read : std_logic_vector(7 DOWNTO 0);
+signal output_state: std_logic_vector(1 downto 0);
 signal write_port_address1,write_port_address2,read_port_address1,read_port_address2,read_port_address3 : std_logic_vector(2 DOWNTO 0);
-signal opcode: std_logic_vector(4 downto 0);
+signal opcode,instr_opcode: std_logic_vector(4 downto 0);
 
 ---------------------------------------------------------------------------------------
 --FETCH DECODE BUFFER SIGNALS
@@ -447,13 +468,13 @@ SIGNAL FD_Flush, FD_Enable : std_logic;
 SIGNAL FD_d_instruction, FD_q_instruction : std_logic_vector(15 DOWNTO 0);
 SIGNAL FD_d_not_taken_address, FD_q_not_taken_address : std_logic_vector(31 DOWNTO 0);
 SIGNAL FD_d_predicted_state, FD_q_predicted_state : std_logic_vector(1 DOWNTO 0);
-SIGNAL FD_d_state_address, FD_q_state_address : std_logic_vector(1 DOWNTO 0);
+SIGNAL FD_d_state_address, FD_q_state_address : std_logic_vector(7 DOWNTO 0);
 ----------------------------------------------------------------------------------------
 --DECODE EXCUTE BUFFER SIGNALS
 
 SIGNAL DE_d_WB_signals, DE_q_WB_signals : std_logic_vector(4 DOWNTO 0);
 SIGNAL DE_d_excute_signals, DE_q_excute_signals : std_logic_vector(8 DOWNTO 0);
-SIGNAL DE_d_memory_signals, DE_q_memory_signals : std_logic_vector(6 DOWNTO 0); 
+SIGNAL DE_d_memory_signals, DE_q_memory_signals : std_logic_vector(7 DOWNTO 0); 
 SIGNAL DE_d_data1, DE_q_data1 : std_logic_vector(31 DOWNTO 0);
 SIGNAL DE_d_data2, DE_q_data2 : std_logic_vector(31 DOWNTO 0);
 SIGNAL DE_d_Rsrc1, DE_q_Rsrc1 : std_logic_vector(2 DOWNTO 0);
@@ -463,7 +484,7 @@ SIGNAL DE_d_Rdst2, DE_q_Rdst2 : std_logic_vector(2 DOWNTO 0);
 ----------------------------------------------------------------------------------------
 --EXECUTE MEMORY BUFFER SIGNALS
 SIGNAL EM_q_WB_signals : std_logic_vector(4 DOWNTO 0);
-SIGNAL EM_q_memory_signals : std_logic_vector(6 DOWNTO 0); 
+SIGNAL EM_q_memory_signals : std_logic_vector(7 DOWNTO 0); 
 SIGNAL EM_d_data1, EM_q_data1 : std_logic_vector(31 DOWNTO 0);
 SIGNAL EM_d_data2, EM_q_data2 : std_logic_vector(31 DOWNTO 0);
 SIGNAL EM_d_Rdst1, EM_q_Rdst1 : std_logic_vector(2 DOWNTO 0);
@@ -518,19 +539,16 @@ PORT MAP(	CLK,RST,rti_or_ret, clr_rbit_EM,rbit_out);
 --INT_PUSH_BIT: one_bit_buffer 
 --PORT MAP(	CLK,RST,int_push_flags,int_push_bit_out_WB,int_push_bit_out);
 
--- Hazard detection unit, UNFINISHED
---hazards: HDU 
---    generic map(n: integer := 3)
-    -- load_E_MEM is load signal from Execute-Memory buffer 
+-- Hazard detection unit
+branch <= jz_opcode or jmp_opcode or call_opcode;
+hazards: HDU 
+    generic map(3)
     -- Branch_MEM is '1' if jmp or jz or call from memory
-
-    -- Rdst_E_MEM is Rdst from Execute-Memory buffer
-    -- Rdst_MEM is Rdst from memory
---    port map(write_back, DE_q_WB_signals(4), DE_q_WB_signals(4), swap, DE_d_WB_signals, DE_q_memory_signals(6),
---	 load_E_MEM, Branch_MEM, FD_q_instruction(5 downto 3), FD_q_instruction(8 downto 6),
---	 FD_q_instruction(2 downto 0),FD_q_instruction(8 downto 6), DE_q_Rdst1, DE_q_Rdst2, Rdst_E_MEM, Rdst_MEM,
---         insert_bubble, flush);
---stall <= flush or insert_bubble;
+    port map(write_back, DE_q_WB_signals(4), DE_q_WB_signals(4), swap, DE_q_WB_signals(3), DE_q_memory_signals(7),
+	 EM_q_memory_signals(7), branch, FD_q_instruction(5 downto 3), FD_q_instruction(8 downto 6),
+	 FD_q_instruction(2 downto 0),FD_q_instruction(8 downto 6), DE_q_Rdst1, DE_q_Rdst2, EM_q_Rdst1, rom_data_out(2 downto 0),
+         insert_bubble, flush);
+stall <= flush or insert_bubble;
 
 FU: forwarding_unit 
 PORT MAP( 
@@ -559,74 +577,56 @@ PORT MAP(
 	MEM_ALU_Rdst2_Rsrc1,
 	MEM_ALU_Rdst2_Rsrc2
 );
---==========================================================
---FSEL: fetch_Rdst_selector
---PORT MAP(EM_q_data1, EM_q_data2, MW_q_data1, MW_q_data2, 	,ALU_F_Rdst1, ALU_F_Rdst2, MEM_F_Rdst1,
---	MEM_F_Rdst2, FSEL_out
---);
 
-ALUSEL1: ALU_in1_selector
-PORT MAP(EM_q_data1, EM_q_data2, MW_q_data1, MW_q_data2, DE_q_data1, ALU_ALU_Rdst1_Rsrc1, ALU_ALU_Rdst2_Rsrc1,
-	MEM_ALU_Rdst1_Rsrc1,MEM_ALU_Rdst2_Rsrc1, ALU_in1
-);
-
-ALUSEL2: ALU_in2_selector
-PORT MAP(EM_q_data1, EM_q_data2, MW_q_data1, MW_q_data2, DE_q_data2, ALU_ALU_Rdst1_Rsrc2, ALU_ALU_Rdst2_Rsrc2,
-	MEM_ALU_Rdst1_Rsrc2,MEM_ALU_Rdst2_Rsrc2, ALU_in2
-);
 -- =====================================================================================
 -- FETCH STAGE  ========================================================================
 -- =====================================================================================
+-- instr_opcode is the opcode coming from instruction memory directly
+instr_opcode <= rom_data_out(15 downto 11);
+jz_opcode<= (instr_opcode(4)and (not instr_opcode(3)) and (not instr_opcode(2)) and instr_opcode(1) and (not instr_opcode(0)) );
+jmp_opcode<= (instr_opcode(4)and (not instr_opcode(3)) and (not instr_opcode(2)) and instr_opcode(1) and  instr_opcode(0) );
+call_opcode<= (instr_opcode(4)and (not instr_opcode(3)) and instr_opcode(2)and (not instr_opcode(1)) and (not instr_opcode(0)));
+jump_enable <= ( 
+jmp_opcode or call_opcode or (
+jz_opcode and (
+(FD_d_predicted_state(1) and FD_d_predicted_state(0)) or  
+(FD_d_predicted_state(1) and (not FD_d_predicted_state(0)))    
+)));
+rom_read<='1';
+rom_address<=instruction_address(10 downto 0);
 
 -- ROM  ===============================
 ROM1: ROM PORT MAP(rom_read, rom_address,rom_data_out);
 
 -- ROM connections ====================
-rom_read<='1';
-rom_address<=instruction_address(10 downto 0);
 mux_rom_fd_int: mux_2X1
 GENERIC MAP(16)
 PORT MAP(rom_data_out,"1011100000000000",FD_d_instruction,int_bit_out);
 opcode<=FD_d_instruction(15 downto 11);
 
 -- PC ADDRESS HANDLING  ===============
+read_port_address3 <= rom_data_out(2 downto 0);
+FSEL: fetch_Rdst_selector
+PORT MAP(EM_q_data1, EM_q_data2, MW_q_data1, MW_q_data2,read_port_data3 ,ALU_F_Rdst1, ALU_F_Rdst2, MEM_F_Rdst1,
+	MEM_F_Rdst2, FSEL_out
+);
+-- Used to choose the appropiate address of next instruction depend on certain enables.
 PC_ADDRESS_CIRCUIT: pc_circuit PORT MAP( 
 	instruction_address, incremented_pc, FD_q_not_taken_address,
-	address_loaded_from_memory,jump_address ,
+	address_loaded_from_memory,FSEL_out ,
 	stall, jump_enable, not_taken_address_enable,
 	address_loaded_from_memory_enable,
 	address_to_pc, FD_d_not_taken_address );
 address_loaded_from_memory_enable <= (connect_memory_pc or RST);
-
+-- PC register used to get the instruction address to fetch it
 PC : pc_register PORT MAP(CLK,RST,address_to_pc,instruction_address,'1');
-
+-- Enabled when call instruction is fetched to push the next pc value
+TEMP_PC : pc_register PORT MAP(CLK,RST,incremented_pc,temp_pc_data,call_opcode);
+-- IncrementPC by one
 INC: incrementor PORT MAP(CLK,RST,instruction_address,incremented_pc,'1');
 
-
--- =====================================================================================
--- DYNAMIC PREDICTION FOR JUMP INSTRUCTION =============================================
--- =====================================================================================
-
-
-jz_opcode<= (opcode(4)and (not opcode(3)) and (not opcode(2)) and opcode(1) and (not opcode(0)) );
-jmp_opcode<= (opcode(4)and (not opcode(3)) and (not opcode(2)) and opcode(1) and  opcode(0) );
-call_opcode<= (opcode(4)and (not opcode(3)) and opcode(2)and (not opcode(1)) and (not opcode(0)));
-jump_enable <= ( 
-jmp_opcode or call_opcode or (
-jz_opcode and (
-(state_data_read(1) and state_data_read(0)) or  
-(state_data_read(1) and (not state_data_read(0)))    
-)));
-
--- TODO set state data from fetch buffer and zero flag bit
-JCC: jump_check_circuit PORT MAP (CLK,RST,jz_opcode,state_data_read_fetch_buffer, zero_flag_bit, output_state,
-		not_taken_address_enable);
--- TODO set state data read and write also but state data read in fetch buffer
-SM: state_memory PORT MAP(CLK ,not_taken_address_enable,state_address_write,state_address_read ,
-		output_state , state_data_read);
-
-
 --FETCH DECODE BUFFER==============================
+FD_d_state_address <= instruction_address(7 downto 0);
 
 fdbuff : FD_buffer PORT MAP(CLK, RST, FD_Enable, FD_Flush, FD_d_instruction, FD_q_instruction,
  	FD_d_not_taken_address, FD_q_not_taken_address, FD_d_predicted_state, FD_q_predicted_state,
@@ -635,10 +635,30 @@ fdbuff : FD_buffer PORT MAP(CLK, RST, FD_Enable, FD_Flush, FD_d_instruction, FD_
 --========================================================================================
 --DECODE STAGE ===========================================================================
 --========================================================================================
+opcode <= FD_q_instruction(15 downto 11);
+jz_FD_opcode<= (opcode(4)and (not opcode(3)) and (not opcode(2)) and opcode(1) and (not opcode(0)) );
+jmp_opcode<= (instr_opcode(4)and (not instr_opcode(3)) and (not instr_opcode(2)) and instr_opcode(1) and  instr_opcode(0) );
+call_opcode<= (instr_opcode(4)and (not instr_opcode(3)) and instr_opcode(2)and (not instr_opcode(1)) and (not instr_opcode(0)));
+read_port_address1 <= FD_q_instruction(5 downto 3);
+read_port_address2 <= FD_q_instruction(8 downto 6);
+DE_d_data1 <= read_port_data1;
+DE_d_data2 <= read_port_data2;
+DE_d_Rdst1 <= FD_q_instruction(2 downto 0);
+DE_d_Rdst2 <= FD_q_instruction(8 downto 6);
+DE_d_Rsrc1 <= FD_q_instruction(5 downto 3);
+DE_d_Rsrc2 <= FD_q_instruction(8 downto 6);
+DE_d_WB_signals <= write_back&swap&output_port&rti_pop_flags&int_push_flags;
+DE_d_memory_signals <= load&enable_mem&read_write&enable_stack&push_pop&mem_to_pc&clr_rbit&clr_int;
+DE_d_excute_signals <= alu_operation&input_port&one_src&cu_s1&cu_s0&enable_temp2;
+-- DYNAMIC PREDICTION FOR JUMP INSTRUCTION =======================
 
+JCC: jump_check_circuit PORT MAP (CLK,RST,jz_FD_opcode,FD_q_predicted_state, flag_out(zFlag), output_state,
+		not_taken_address_enable);
+
+SM: state_memory PORT MAP(CLK ,not_taken_address_enable,FD_q_state_address,FD_d_state_address ,
+		output_state , FD_d_predicted_state);
 
 -- Control Unit  ===================================
-
 CU: control_unit
 port MAP (      RST, opcode,
 		alu_operation,
@@ -651,8 +671,7 @@ port MAP (      RST, opcode,
 		clr_int,
 		write_back, swap,		--write back ops
 		rti_pop_flags, int_push_flags, 
-		output_port);
-
+		output_port,load);
 
 -- Register Files  ==================================
 RF: register_files 
@@ -661,10 +680,16 @@ PORT MAP(	CLK,RST,MW_q_WB_signals(4),MW_q_WB_signals(3),write_port_data1,write_p
 	    	read_port_data1,read_port_data2,read_port_data3,
 	    	read_port_address1,read_port_address2,read_port_address3);
 
+-- Select data 2 input to the buffer
+select_data2: data2_selector 
+ 	port map(
+     		read_port_data2,temp_pc_data,
+		rom_data_out,
+		FD_q_instruction(10 downto 6),
+		FD_q_instruction(9 downto 6),
+     		opcode,DE_d_data2);
+
 --DECODE EXECUTE BUFFER ==============================
-DE_d_WB_signals <= write_back&swap&output_port&rti_pop_flags&int_push_flags;
-DE_d_memory_signals <= enable_mem&read_write&enable_stack&push_pop&mem_to_pc&clr_rbit&clr_int;
-DE_d_excute_signals <= alu_operation&input_port&one_src&cu_s1&cu_s0&enable_temp2;
 
 debuff : DE_buffer PORT MAP(CLK, RST,DE_d_WB_signals,DE_q_WB_signals,
 	DE_d_memory_signals , DE_q_memory_signals,
@@ -675,13 +700,31 @@ debuff : DE_buffer PORT MAP(CLK, RST,DE_d_WB_signals,DE_q_WB_signals,
 --===========================================================================================
 --EXECUTE STAGE =============================================================================
 --===========================================================================================
-ALU1: ALU
-    port map(
-	opcode,
-        DE_q_data1, DE_q_data2,
-	EM_d_data1,
-        flag_out,flag_in);
+EM_d_Rdst1 <= DE_q_Rdst1;
+EM_d_Rdst2 <= DE_q_Rdst2;
+ALUSEL1: ALU_in1_selector
+	PORT MAP(EM_q_data1, EM_q_data2, MW_q_data1, MW_q_data2, DE_q_data1, ALU_ALU_Rdst1_Rsrc1, ALU_ALU_Rdst2_Rsrc1,
+		MEM_ALU_Rdst1_Rsrc1,MEM_ALU_Rdst2_Rsrc1, ALU_in1);
 
+ALUSEL2: ALU_in2_selector
+	PORT MAP(EM_q_data1, EM_q_data2, MW_q_data1, MW_q_data2, DE_q_data2, ALU_ALU_Rdst1_Rsrc2, ALU_ALU_Rdst2_Rsrc2,
+		MEM_ALU_Rdst1_Rsrc2,MEM_ALU_Rdst2_Rsrc2, ALU_in2);
+ALU1: ALU
+    	port map(
+		opcode,
+        	ALU_in1, ALU_in2,
+		alu_output,
+	        flag_out,flag_in);
+
+data2_to_EMB_mux_4X1: mux_4X1 
+ 	port map(
+     		alu_output,ALU_in1,input_port_data,ALU_in2,
+     		cu_s0,cu_s1,
+     		EM_d_data1);
+
+data2_to_EMB_mux: mux_2X1
+	GENERIC MAP(32)
+	PORT MAP(ALU_in2,ALU_in1,EM_d_data2,DE_q_WB_signals(3));
 
 --EXECUTE MEMORY BUFFER =============================
 embuff : EM_buffer
@@ -702,10 +745,20 @@ PORT MAP(
 --========================================================================================
 --MEMORY STAGE ===========================================================================
 --========================================================================================
-
+ram_read <= (EM_q_memory_signals(6) and not EM_q_memory_signals(5)) or RST;
+ram_write <= EM_q_memory_signals(6) and EM_q_memory_signals(5);
+address_loaded_from_memory<=ram_data_out;
+clr_int_EM <= EM_q_memory_signals(0);
+clr_rbit_EM <= EM_q_memory_signals(1);
+MW_d_WB_signals <= EM_q_WB_signals;
+MW_d_Rdst1 <= EM_q_Rdst1;
+MW_d_Rdst2 <= EM_q_Rdst2;
+MW_d_data2 <= EM_q_data2;
+-- TODO set suitable flag enable.
+flag_enable <= (not cu_s0) and (not cu_s1);
 -- RAM  ============================================
 RAM1: RAM
-PORT MAP(	ram_write,ram_read, ram_address,ram_data_in,ram_data_out);
+PORT MAP(ram_write,ram_read, ram_address,ram_data_in,ram_data_out);
 
 connect_memory_pc <= EM_q_memory_signals(2);
 sp: stack_pointer
@@ -763,12 +816,8 @@ temp2_register : registerr
      		--enable1,enable2: TODO put enables to temp2 and flag
 --     		ram_data_in
 --  	);
-ram_read <= (EM_q_memory_signals(6) and not EM_q_memory_signals(5)) or RST;
-ram_write <= EM_q_memory_signals(6) and EM_q_memory_signals(5);
-address_loaded_from_memory<=ram_data_out;
-clr_int_EM <= EM_q_memory_signals(0);
-clr_rbit_EM <= EM_q_memory_signals(1);
-
+-- TODO remove it and uncomment previous module
+ram_data_in <= EM_q_data1;
 --MEMORY WRITE BACK BUFFER===========================
 mwbuff : MW_buffer
 PORT MAP(
