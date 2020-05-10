@@ -17,7 +17,7 @@ BEGIN
 PROCESS (d,CLK,RST,enable)
 BEGIN
 IF RST = '1' THEN
-q <= (OTHERS=>'0');
+q <= d;
 ELSIF (falling_edge(CLK) and enable='1') THEN
 q <= (d+1);
 END IF;

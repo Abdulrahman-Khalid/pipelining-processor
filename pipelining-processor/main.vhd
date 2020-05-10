@@ -464,7 +464,7 @@ signal opcode,instr_opcode: std_logic_vector(4 downto 0);
 ---------------------------------------------------------------------------------------
 --FETCH DECODE BUFFER SIGNALS
 
-SIGNAL FD_Flush, FD_Enable : std_logic;
+SIGNAL FD_Enable : std_logic;
 SIGNAL FD_d_instruction, FD_q_instruction : std_logic_vector(15 DOWNTO 0);
 SIGNAL FD_d_not_taken_address, FD_q_not_taken_address : std_logic_vector(31 DOWNTO 0);
 SIGNAL FD_d_predicted_state, FD_q_predicted_state : std_logic_vector(1 DOWNTO 0);
@@ -602,7 +602,7 @@ ROM1: ROM PORT MAP(rom_read, rom_address,rom_data_out);
 mux_rom_fd_int: mux_2X1
 GENERIC MAP(16)
 PORT MAP(rom_data_out,"1011100000000000",FD_d_instruction,int_bit_out);
-opcode<=FD_d_instruction(15 downto 11);
+opcode<=FD_q_instruction(15 downto 11);
 
 -- PC ADDRESS HANDLING  ===============
 read_port_address3 <= rom_data_out(2 downto 0);
@@ -628,7 +628,9 @@ INC: incrementor PORT MAP(CLK,RST,instruction_address,incremented_pc,'1');
 --FETCH DECODE BUFFER==============================
 FD_d_state_address <= instruction_address(7 downto 0);
 
-fdbuff : FD_buffer PORT MAP(CLK, RST, FD_Enable, FD_Flush, FD_d_instruction, FD_q_instruction,
+--TODO set enable to fetch buffer
+FD_Enable <= '1';
+fdbuff : FD_buffer PORT MAP(CLK, RST, FD_Enable, flush, FD_d_instruction, FD_q_instruction,
  	FD_d_not_taken_address, FD_q_not_taken_address, FD_d_predicted_state, FD_q_predicted_state,
 	FD_d_state_address, FD_q_state_address);
 
