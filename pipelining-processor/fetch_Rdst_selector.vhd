@@ -24,7 +24,7 @@ END fetch_Rdst_selector;
 
 ARCHITECTURE fetch_Rdst_selector1 OF fetch_Rdst_selector IS
 BEGIN
-PROCESS (EM_data1, EM_data2, MW_data1, MW_data2, ALU_F_Rdst1, ALU_F_Rdst2, MEM_F_Rdst1, MEM_F_Rdst2)
+PROCESS (EM_data1, EM_data2, MW_data1, MW_data2, ALU_F_Rdst1, ALU_F_Rdst2, MEM_F_Rdst1, MEM_F_Rdst2, REG_data)
 BEGIN
 
 IF MEM_F_Rdst1 = '1' and ALU_F_Rdst1 = '0' and ALU_F_Rdst2 = '0' THEN
