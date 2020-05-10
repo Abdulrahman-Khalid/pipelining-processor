@@ -20,7 +20,7 @@ entity HDU is
     -- Rdst1_ID_E is Rdst from Decode-Execute buffer
     -- Rdst2_ID_E is Rdst from Decode-Execute buffer
     -- Rdst_E_MEM is Rdst from Execute-Memory buffer
-    -- Rdst_MEM is Rdst from memory
+    -- Rdst_MEM is Rdst from fetch memory
     port(WB_CU, WB_ID_E, WB_E_MEM, swap_CU, swap_ID_E, load_ID_E, load_E_MEM, Branch_MEM: in std_logic;
         Rsrc1_F_ID, Rsrc2_F_ID, Rdst1_F_ID, Rdst2_F_ID, Rdst1_ID_E, Rdst2_ID_E, Rdst_E_MEM, Rdst_MEM: in std_logic_vector(n-1 downto 0);
         insert_bubble, flush: out std_logic);

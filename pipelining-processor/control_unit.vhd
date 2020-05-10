@@ -15,7 +15,7 @@ entity control_unit is
 		clr_int,
 		write_back, swap,		--write back ops
 		rti_pop_flags, int_push_flags, 
-		output_port
+		output_port,load
 			: out std_logic);
 end entity;
 
@@ -33,6 +33,7 @@ Architecture behavioural of control_unit is
 		clr_rbit<='0';		clr_int<='0';		write_back<='0';
 		swap<='0';		rti_pop_flags<='0';	int_push_flags<='0';
 		output_port<='0';	read_write<='0';	alu_operation <= "0000";
+		load <='0';		
 		if rst = '0' then
 		if input(4) = '0' then --Handles all ALU operations
 			cu_s1<='0';
@@ -46,7 +47,7 @@ Architecture behavioural of control_unit is
 		one_src<='1';output_port<='1';	
 		elsif input = "10001" then input_port<='1'; write_back<='1'; 	--IN
 		cu_s1<='1';cu_s0<='0';
-		elsif input = "10100" then cu_s1<='1';cu_s0<='1'; 		--CALL
+		elsif input = "10100" then cu_s1<='1';cu_s0<='1';	--CALL
 		enable_stack<='1'; push_pop<='1'; read_write<='1';enable_mem<='1';
 		elsif input = "10101" then enable_mem<='1'; enable_stack<='1';	--RET
 		push_pop<='0'; read_write<='0'; mem_to_pc<='1'; clr_rbit<='1';
@@ -58,13 +59,12 @@ Architecture behavioural of control_unit is
 		int_push_flags<='1';enable_temp2<='1';
 		elsif input = "11000" then cu_s1<='0';cu_s0<='1'; 		--PUSH
 		enable_stack<='1'; push_pop<='1'; read_write<='1';enable_mem<='1';
-		elsif input = "11000" then cu_s1<='0';cu_s0<='1'; 		--PUSH
-		enable_stack<='1'; push_pop<='1'; read_write<='1';enable_mem<='1';
 		elsif input = "11001" then enable_mem<='1'; enable_stack<='1'; 	--POP
 		push_pop<='0'; read_write<='0'; write_back<='1';
-		elsif input = "11010" then read_write<='0';			--LDM -- modified by amr enable_mem<='1'; write_back<='1';
+		elsif input = "11010" then write_back<='1'; cu_s1<='1';		--LDM -- modified
+		cu_s0<='1';
 		elsif input = "11011" then enable_mem<='1'; write_back<='1';	--LDD
-		read_write<='0';
+		read_write<='0'; load <='1';	
 		elsif input = "11100" then  cu_s1<='0';cu_s0<='1';		--STD
 		read_write<='1';enable_mem<='1';
 		elsif input = "11101" then swap<='1'; cu_s1<='1';cu_s0<='1';	--SWAP
