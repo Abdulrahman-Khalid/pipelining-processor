@@ -379,7 +379,7 @@ END COMPONENT;
 
 -- Define ALU 
 COMPONENT ALU is
-    generic(n: integer := 32; m: integer := 5);
+    generic(n: integer := 32; m: integer := 4);
     port(operationControl: in std_logic_vector(m-1 downto 0);
         A, B: in std_logic_vector(n-1 downto 0);
         F: out std_logic_vector(n-1 downto 0);
@@ -544,7 +544,7 @@ branch <= jz_opcode or jmp_opcode or call_opcode;
 hazards: HDU 
     generic map(3)
     -- Branch_MEM is '1' if jmp or jz or call from memory
-    port map(write_back, DE_q_WB_signals(4), DE_q_WB_signals(4), swap, DE_q_WB_signals(3), DE_q_memory_signals(7),
+    port map(write_back, DE_q_WB_signals(4), EM_q_WB_signals(4), swap, DE_q_WB_signals(3), DE_q_memory_signals(7),
 	 EM_q_memory_signals(7), branch, FD_q_instruction(5 downto 3), FD_q_instruction(8 downto 6),
 	 FD_q_instruction(2 downto 0),FD_q_instruction(8 downto 6), DE_q_Rdst1, DE_q_Rdst2, EM_q_Rdst1, rom_data_out(2 downto 0),
          insert_bubble, flush);
@@ -594,6 +594,7 @@ jz_opcode and (
 )));
 rom_read<='1';
 rom_address<=instruction_address(10 downto 0);
+read_port_address3 <= rom_data_out(2 downto 0);
 
 -- ROM  ===============================
 ROM1: ROM PORT MAP(rom_read, rom_address,rom_data_out);
@@ -602,10 +603,8 @@ ROM1: ROM PORT MAP(rom_read, rom_address,rom_data_out);
 mux_rom_fd_int: mux_2X1
 GENERIC MAP(16)
 PORT MAP(rom_data_out,"1011100000000000",FD_d_instruction,int_bit_out);
-opcode<=FD_q_instruction(15 downto 11);
 
 -- PC ADDRESS HANDLING  ===============
-read_port_address3 <= rom_data_out(2 downto 0);
 FSEL: fetch_Rdst_selector
 PORT MAP(EM_q_data1, EM_q_data2, MW_q_data1, MW_q_data2,read_port_data3 ,ALU_F_Rdst1, ALU_F_Rdst2, MEM_F_Rdst1,
 	MEM_F_Rdst2, FSEL_out
@@ -639,8 +638,6 @@ fdbuff : FD_buffer PORT MAP(CLK, RST, FD_Enable, flush, FD_d_instruction, FD_q_i
 --========================================================================================
 opcode <= FD_q_instruction(15 downto 11);
 jz_FD_opcode<= (opcode(4)and (not opcode(3)) and (not opcode(2)) and opcode(1) and (not opcode(0)) );
-jmp_opcode<= (instr_opcode(4)and (not instr_opcode(3)) and (not instr_opcode(2)) and instr_opcode(1) and  instr_opcode(0) );
-call_opcode<= (instr_opcode(4)and (not instr_opcode(3)) and instr_opcode(2)and (not instr_opcode(1)) and (not instr_opcode(0)));
 read_port_address1 <= FD_q_instruction(5 downto 3);
 read_port_address2 <= FD_q_instruction(8 downto 6);
 DE_d_data1 <= read_port_data1;
@@ -713,7 +710,7 @@ ALUSEL2: ALU_in2_selector
 		MEM_ALU_Rdst1_Rsrc2,MEM_ALU_Rdst2_Rsrc2, ALU_in2);
 ALU1: ALU
     	port map(
-		opcode,
+		DE_q_excute_signals(8 downto 5),
         	ALU_in1, ALU_in2,
 		alu_output,
 	        flag_out,flag_in);

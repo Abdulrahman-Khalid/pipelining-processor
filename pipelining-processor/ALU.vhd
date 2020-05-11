@@ -18,7 +18,7 @@ USE work.constants.all;
     -- SHR shift right A by B times
 
 entity ALU is
-    generic(n: integer := 32; m: integer := 5);
+    generic(n: integer := 32; m: integer := 4);
     port(operationControl: in std_logic_vector(m-1 downto 0);
         A, B: in std_logic_vector(n-1 downto 0);
         F: out std_logic_vector(n-1 downto 0);
