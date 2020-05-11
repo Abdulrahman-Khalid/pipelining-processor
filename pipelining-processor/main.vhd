@@ -397,20 +397,21 @@ END COMPONENT;
 COMPONENT data2_selector is
 	GENERIC ( n : integer := 32);
  	port(
-     		RF_data2,temp_pc: in std_logic_vector(n-1 DOWNTO 0);
-		rom_dataout: in std_logic_vector(15 downto 0);
-		immediate_5bits: in std_logic_vector(4 downto 0);
-		eff: in std_logic_vector(3 downto 0);
+     		RF_data2,temp_pc, shift_data,effective_address
+		,immediate_data: in std_logic_vector(n-1 DOWNTO 0);
      		opcode: in std_logic_vector(4 downto 0);
      		Z: out std_logic_vector(n-1 DOWNTO 0));
-end COMPONENT;
+END COMPONENT;
 -- =====================================================================================
 -- SIGNALS USED ========================================================================
 -- =====================================================================================
 signal  instruction_address, incremented_pc, address_loaded_from_memory,
 	address_to_pc, write_port_data1,write_port_data2,
 	read_port_data1,read_port_data2,read_port_data3,temp2_dataout,
-	output_port_data, alu_output, temp_pc_data: std_logic_vector(31 downto 0);
+	output_port_data, alu_output, temp_pc_data, temp :std_logic_vector(31 downto 0);
+signal 	shift_data: std_logic_vector(31 downto 0):=(OTHERS=>'0');
+signal 	effective_address: std_logic_vector(31 downto 0):=(OTHERS=>'0');
+signal	immediate_data: std_logic_vector(31 downto 0):=(OTHERS=>'0');
 ---------------------------------------------------------------------------------------
 signal ram_read,ram_write,rom_read :std_logic;
 signal ram_address : std_logic_vector(RAM_ADDRESS_WIDTH-1 DOWNTO 0);
@@ -643,7 +644,6 @@ jz_FD_opcode<= (opcode(4)and (not opcode(3)) and (not opcode(2)) and opcode(1) a
 read_port_address1 <= FD_q_instruction(5 downto 3);
 read_port_address2 <= FD_q_instruction(8 downto 6);
 DE_d_data1 <= read_port_data1;
-DE_d_data2 <= read_port_data2;
 DE_d_Rdst1 <= FD_q_instruction(2 downto 0);
 DE_d_Rdst2 <= FD_q_instruction(8 downto 6);
 DE_d_Rsrc1 <= FD_q_instruction(5 downto 3);
@@ -651,6 +651,10 @@ DE_d_Rsrc2 <= FD_q_instruction(8 downto 6);
 DE_d_WB_signals <= write_back&swap&output_port&rti_pop_flags&int_push_flags;
 DE_d_memory_signals <= load&enable_mem&read_write&enable_stack&push_pop&mem_to_pc&clr_rbit&clr_int;
 DE_d_excute_signals <= alu_operation&input_port&one_src&cu_s1&cu_s0&enable_temp2;
+
+shift_data <= std_logic_vector("0000000000000000"&"00000000000"&FD_q_instruction(10 downto 6));
+effective_address <= std_logic_vector("000000000000"&FD_q_instruction(9 downto 6)&rom_data_out);
+immediate_data <= std_logic_vector("0000000000000000"&rom_data_out);
 -- DYNAMIC PREDICTION FOR JUMP INSTRUCTION =======================
 
 JCC: jump_check_circuit PORT MAP (CLK,RST,jz_FD_opcode,FD_q_predicted_state, flag_out(zFlag), output_state,
@@ -686,13 +690,11 @@ PORT MAP(	CLK,RST,MW_q_WB_signals(4),MW_q_WB_signals(3),write_port_data1,write_p
 select_data2: data2_selector 
  	port map(
      		read_port_data2,temp_pc_data,
-		rom_data_out,
-		FD_q_instruction(10 downto 6),
-		FD_q_instruction(9 downto 6),
+		shift_data,effective_address
+		,immediate_data,
      		opcode,DE_d_data2);
 
 --DECODE EXECUTE BUFFER ==============================
-
 debuff : DE_buffer PORT MAP(CLK, RST,DE_d_WB_signals,DE_q_WB_signals,
 	DE_d_memory_signals , DE_q_memory_signals,
 	DE_d_excute_signals , DE_q_excute_signals, DE_d_data1, DE_q_data1, DE_d_data2, DE_q_data2,
@@ -704,11 +706,11 @@ debuff : DE_buffer PORT MAP(CLK, RST,DE_d_WB_signals,DE_q_WB_signals,
 --===========================================================================================
 EM_d_Rdst1 <= DE_q_Rdst1;
 EM_d_Rdst2 <= DE_q_Rdst2;
-ALUSEL1: ALU_in1_selector
+ALUSEL1: ALU_in1_selector -- First operand selector
 	PORT MAP(EM_q_data1, EM_q_data2, MW_q_data1, MW_q_data2, DE_q_data1, ALU_ALU_Rdst1_Rsrc1, ALU_ALU_Rdst2_Rsrc1,
 		MEM_ALU_Rdst1_Rsrc1,MEM_ALU_Rdst2_Rsrc1, ALU_in1);
 
-ALUSEL2: ALU_in2_selector
+ALUSEL2: ALU_in2_selector -- Second operand selector
 	PORT MAP(EM_q_data1, EM_q_data2, MW_q_data1, MW_q_data2, DE_q_data2, ALU_ALU_Rdst1_Rsrc2, ALU_ALU_Rdst2_Rsrc2,
 		MEM_ALU_Rdst1_Rsrc2,MEM_ALU_Rdst2_Rsrc2, ALU_in2);
 ALU1: ALU
@@ -718,10 +720,10 @@ ALU1: ALU
 		alu_output,
 	        flag_out,flag_in);
 
-data2_to_EMB_mux_4X1: mux_4X1 
+data1_to_EMB_mux_4X1: mux_4X1 
  	port map(
      		alu_output,ALU_in1,input_port_data,ALU_in2,
-     		cu_s0,cu_s1,
+     		DE_q_excute_signals(1),DE_q_excute_signals(2), -- Mux selectors 
      		EM_d_data1);
 
 data2_to_EMB_mux: mux_2X1
@@ -760,8 +762,17 @@ MW_d_WB_signals <= EM_q_WB_signals;
 MW_d_Rdst1 <= EM_q_Rdst1;
 MW_d_Rdst2 <= EM_q_Rdst2;
 MW_d_data2 <= EM_q_data2;
--- TODO set suitable flag enable.
-flag_enable <= (not cu_s0) and (not cu_s1);
+-- NOT TESTED
+flag_enable <= 	(
+		(not DE_q_excute_signals(1)) 	and 	-- ALU
+	       	(not DE_q_excute_signals(2)) 	and	-- Selectors
+		(					-- Not NOP
+		 DE_q_excute_signals(8) or	
+		 DE_q_excute_signals(7) or
+	  	 DE_q_excute_signals(6)	or 
+		 DE_q_excute_signals(5)
+		)
+		); 
 -- RAM  ============================================
 RAM1: RAM
 PORT MAP(ram_write,ram_read, ram_address,ram_data_in,ram_data_out);
