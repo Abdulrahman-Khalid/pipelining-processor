@@ -12,14 +12,16 @@ PORT( Clk,Rst : IN std_logic;
 END register_nbits;
 ARCHITECTURE a_register_nbits OF register_nbits IS
 BEGIN
-PROCESS (d1,d2,Clk,Rst,enable1,enable2)
+PROCESS (Clk,Rst)
 BEGIN
 	IF Rst = '1' THEN
 		q <= (OTHERS=>'0');
-	ELSIF (Clk = '1' and enable1='1' and wb_signal = '1') THEN
-		q <= d1;
-	ELSIF (Clk = '1' and enable2='1' and swap_signal = '1') THEN
-		q <= d2;
+	ELSIF (falling_edge(Clk)) THEN
+		IF (enable1='1' and wb_signal = '1') THEN
+			q <= d1;
+		ELSIF ( enable2='1' and swap_signal = '1') THEN
+			q <= d2;
+		END IF;
 	END IF;
 END PROCESS;
 END a_register_nbits;
