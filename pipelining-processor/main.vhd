@@ -432,6 +432,7 @@ signal  jump_enable, not_taken_address_enable,jz_opcode,call_opcode,jmp_opcode,
 	clr_int_EM,clr_rbit_EM,
 ---------------------------------------------------------------------------------------
 --CONTOL UNIT OUTPUT SIGNALS
+	cu_rst,		--Resets control unit
 	one_src, 	--One source signal
 	input_port, 	--Input port used signal
 	enable_temp2, 	--Enable temp2 signal
@@ -548,7 +549,7 @@ hazards: HDU
 	 EM_q_memory_signals(7), branch, FD_q_instruction(5 downto 3), FD_q_instruction(8 downto 6),
 	 FD_q_instruction(2 downto 0),FD_q_instruction(8 downto 6), DE_q_Rdst1, DE_q_Rdst2, EM_q_Rdst1, rom_data_out(2 downto 0),
          insert_bubble, flush);
-stall <= flush or insert_bubble;
+stall <= flush or insert_bubble or int_bit_out or rbit_out;
 
 FU: forwarding_unit 
 PORT MAP( 
@@ -658,8 +659,9 @@ SM: state_memory PORT MAP(CLK ,not_taken_address_enable,FD_q_state_address,FD_d_
 		output_state , FD_d_predicted_state);
 
 -- Control Unit  ===================================
+cu_rst <= DE_q_excute_signals(0) or insert_bubble or RST;
 CU: control_unit
-port MAP (      RST, opcode,
+port MAP (      cu_rst, opcode,
 		alu_operation,
 		one_src, input_port,
 		enable_temp2,
@@ -806,7 +808,7 @@ temp2_register : registerr
 		CLK,RST,
 		instruction_address, --REVIEW: input data correct ?
 		temp2_dataout,	
-	 	enable_temp2
+	 	DE_q_excute_signals(0)
 );
 --datain_ram: RAM_datain 
 --	GENERIC (32);
