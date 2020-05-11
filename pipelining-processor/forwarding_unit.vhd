@@ -101,12 +101,12 @@ END PROCESS;
 --===============================================================================================================
 
 --================================ALU/ALU FORWARDING====================================================
-PROCESS(DE_WB_signal, DE_swap_signal, DE_memory_signal, EM_WB_signal, EM_swap_signal, EM_memory_signal, EM_Rdst1, EM_Rdst2, DE_Rsrc1, DE_Rsrc2)
+PROCESS(DE_WB_signal, DE_swap_signal,DE_oneSrc_signal, DE_memory_signal, EM_WB_signal, EM_swap_signal, EM_memory_signal, EM_Rdst1, EM_Rdst2, DE_Rsrc1, DE_Rsrc2)
 BEGIN
 
 IF (DE_WB_signal = '1' or DE_swap_signal = '1') and (DE_memory_signal = '0') and ((EM_WB_signal = '1') or (EM_swap_signal = '1'))
 	and (EM_memory_signal = '0') THEN
-	
+
 	IF EM_Rdst1 = DE_Rsrc1 THEN
 		ALU_ALU_Rdst1_Rsrc1 <= '1';
 	ELSE
@@ -118,6 +118,7 @@ IF (DE_WB_signal = '1' or DE_swap_signal = '1') and (DE_memory_signal = '0') and
 	ELSE
 		ALU_ALU_Rdst1_Rsrc2 <= '0';
 	END IF;
+
 ELSE
 	ALU_ALU_Rdst1_Rsrc1 <= '0';
 	ALU_ALU_Rdst1_Rsrc2 <= '0';
@@ -144,7 +145,7 @@ END PROCESS;
 --===========================================================================================================
 
 --================================MEM/ALU FORWARDING====================================================
-PROCESS(DE_WB_signal, DE_swap_signal, DE_memory_signal, MW_WB_signal, MW_swap_signal, MW_Rdst1, MW_Rdst2, DE_Rsrc1, DE_Rsrc2)
+PROCESS(DE_WB_signal, DE_swap_signal, DE_memory_signal,DE_oneSrc_signal, MW_WB_signal, MW_swap_signal, MW_Rdst1, MW_Rdst2, DE_Rsrc1, DE_Rsrc2)
 BEGIN
 
 IF (DE_WB_signal = '1' or DE_swap_signal = '1') and (DE_memory_signal = '0') and ((MW_WB_signal = '1') or (MW_swap_signal = '1')) THEN
