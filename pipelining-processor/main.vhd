@@ -29,6 +29,7 @@ END COMPONENT ROM;
 COMPONENT RAM IS
 	GENERIC (wordSize : integer := 16; addressWidth: integer := 32; RAMSize: integer := 2**20-1);
 	PORT(	
+		CLK: IN std_logic;
 		W  : IN std_logic;
 		R  : IN std_logic;
 		address : IN  std_logic_vector(addressWidth - 1 DOWNTO 0);
@@ -628,7 +629,7 @@ INC: incrementor PORT MAP(CLK,RST,instruction_address,incremented_pc,'1');
 
 --FETCH DECODE BUFFER==============================
 FD_d_state_address <= instruction_address(7 downto 0);
-flush_FD <= flush or DE_q_excute_signals(0) or clr_int_EM;
+flush_FD <= flush   or clr_int_EM or DE_q_excute_signals(0);
 --TODO set enable to fetch buffer
 FD_Enable <= '1';
 fdbuff : FD_buffer PORT MAP(CLK, RST, FD_Enable, flush_FD, FD_d_instruction, FD_q_instruction,
@@ -660,7 +661,7 @@ SM: state_memory PORT MAP(CLK ,not_taken_address_enable,FD_q_state_address,FD_d_
 		output_state , FD_d_predicted_state);
 
 -- Control Unit  ===================================
-cu_rst <= DE_q_excute_signals(0) or insert_bubble or RST;
+cu_rst <= DE_q_excute_signals(0) or insert_bubble or RST or clr_int_EM;
 CU: control_unit
 port MAP (      cu_rst, opcode,
 		alu_operation,
@@ -748,8 +749,9 @@ PORT MAP(
 --MEMORY STAGE ===========================================================================
 --========================================================================================
 
-read_ram_in <= not EM_q_memory_signals(5) or rti_pop_flags_wb;
-write_ram_in <= EM_q_memory_signals(5) or int_push_bit_out or int_push_flags_wb;
+
+write_ram_in <= (EM_q_memory_signals(5) or int_push_bit_out or int_push_flags_wb);
+read_ram_in <= not write_ram_in or rti_pop_flags_wb;
 enable_ram_in<= EM_q_memory_signals(6) or int_push_bit_out or int_push_flags_wb or rti_pop_flags_wb;
 ram_read <= (enable_ram_in and read_ram_in) or RST;
 ram_write <= enable_ram_in and write_ram_in;
@@ -764,16 +766,16 @@ MW_d_data2 <= EM_q_data2;
 flag_enable <= (not cu_s0) and (not cu_s1);
 -- RAM  ============================================
 RAM1: RAM
-PORT MAP(ram_write,ram_read, ram_address,ram_data_in,ram_data_out);
+PORT MAP(clk,ram_write,ram_read, ram_address,ram_data_in,ram_data_out);
 
 connect_memory_pc <= EM_q_memory_signals(2);
 push_pop_sp_in <=(int_push_bit_out or EM_q_memory_signals(3) or int_push_flags_wb) and not rti_pop_flags_wb;
 enable_sp_in <=   int_push_bit_out or EM_q_memory_signals(4) or int_push_flags_wb  or	   rti_pop_flags_wb;
 sp: stack_pointer
-	PORT MAP( CLK,RST,EM_q_memory_signals(3),EM_q_memory_signals(4),sp_out
+	PORT MAP( CLK,RST,push_pop_sp_in,enable_sp_in,sp_out
 	);
 -- RAM Address handling
-m_sel<=EM_q_memory_signals(6);
+m_sel<=enable_sp_in;
 ram_in_mux2x1_1: mux_2X1
 	GENERIC MAP(32)
 	PORT MAP(
@@ -786,7 +788,7 @@ ram_in_mux2x1_2: mux_2X1
 	PORT MAP(
 		m_mux1_out,"00000000000000000000000000000010",
 		m_mux2_out,
-		clr_int
+		clr_int_EM
 	);
 ram_in_mux2x1_3: mux_2X1
 	GENERIC MAP(32)
@@ -831,8 +833,7 @@ datain_ram: RAM_datain
      		int_push_bit_out,int_push_flags_wb,
     		ram_data_in
   	);
--- TODO remove it and uncomment previous module
-ram_data_in <= EM_q_data1;
+
 --MEMORY WRITE BACK BUFFER===========================
 mwbuff : MW_buffer
 PORT MAP(

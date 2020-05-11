@@ -17,7 +17,7 @@ PROCESS (RST,d,CLK,enable)
 	BEGIN
 	
 		IF(RST = '1') THEN
-			q<= std_logic_vector(to_unsigned(2**20-1, q'length));
+			q<= std_logic_vector(to_unsigned(2**20-2, q'length));
 		ELSIF (rising_edge(CLK) and enable='1') THEN
 			q <= d;
 		END IF;

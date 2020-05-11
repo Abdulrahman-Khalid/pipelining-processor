@@ -6,6 +6,7 @@ use STD.TEXTIO.all;
 ENTITY RAM IS
 	GENERIC (wordSize : integer := 16; addressWidth: integer := 32; RAMSize: integer := 2**20-1; RAMActualWidth :integer :=20);
 	PORT(	
+		CLK: IN std_logic;
 		W  : IN std_logic;
 		R  : IN std_logic;
 		address : IN  std_logic_vector(addressWidth - 1 DOWNTO 0);
@@ -53,9 +54,9 @@ ARCHITECTURE RAM_arch OF RAM IS
 	END FUNCTION fillRAM;
 SIGNAL RAM : RAMType := fillRAM;
 BEGIN
-PROCESS(W, R,address) IS
+PROCESS(W, R,address,clk) IS
 	BEGIN
-	IF W = '1' THEN  
+	IF (W = '1' and falling_edge(clk)) THEN  
 		RAM(to_integer(unsigned(address(RAMActualWidth - 1 downto 0)))) <= dataIn(15 downto 0);
 		RAM(1+to_integer(unsigned(address(RAMActualWidth - 1 downto 0)))) <= dataIn(31 downto 16);
 	ELSIF R = '1' THEN

@@ -54,8 +54,8 @@ Architecture behavioural of control_unit is
 		elsif input = "10110" then enable_mem<='1'; enable_stack<='1';	--RTI
 		push_pop<='0'; read_write<='0'; mem_to_pc<='1'; clr_rbit<='1';
 		rti_pop_flags<='1';
-		elsif input = "10111" then enable_mem<='1'; enable_stack<='1';	--INT
-		push_pop<='0'; read_write<='0'; mem_to_pc<='1'; clr_int<='1';
+		elsif input = "10111" then enable_mem<='1'; 			--INT
+		read_write<='0'; mem_to_pc<='1'; clr_int<='1';
 		int_push_flags<='1';enable_temp2<='1';
 		elsif input = "11000" then cu_s1<='0';cu_s0<='1'; 		--PUSH
 		enable_stack<='1'; push_pop<='1'; read_write<='1';enable_mem<='1';
