@@ -527,8 +527,8 @@ BEGIN
 -- =====================================================================================
 
 -- 3 one bit buffers  ==================================================================
-rti_opcode<= (opcode(4)and (not opcode(3)) and  opcode(2) and opcode(1) and (not opcode(0)) );
-ret_opcode<= (opcode(4)and (not opcode(3)) and  opcode(2) and (not opcode(1)) and opcode(0) );
+rti_opcode<= (instr_opcode(4)and (not instr_opcode(3)) and  instr_opcode(2) and instr_opcode(1) and (not instr_opcode(0)) );
+ret_opcode<= (instr_opcode(4)and (not instr_opcode(3)) and  instr_opcode(2) and (not instr_opcode(1)) and instr_opcode(0) );
 rti_or_ret<= ret_opcode or rti_opcode;
 ----------------------------------------------------------------------------------------
 INT_BIT: one_bit_buffer
@@ -582,7 +582,6 @@ PORT MAP(
 -- FETCH STAGE  ========================================================================
 -- =====================================================================================
 -- instr_opcode is the opcode coming from instruction memory directly
-instr_opcode <= rom_data_out(15 downto 11);
 jz_opcode<= (instr_opcode(4)and (not instr_opcode(3)) and (not instr_opcode(2)) and instr_opcode(1) and (not instr_opcode(0)) );
 jmp_opcode<= (instr_opcode(4)and (not instr_opcode(3)) and (not instr_opcode(2)) and instr_opcode(1) and  instr_opcode(0) );
 call_opcode<= (instr_opcode(4)and (not instr_opcode(3)) and instr_opcode(2)and (not instr_opcode(1)) and (not instr_opcode(0)));
@@ -602,7 +601,7 @@ ROM1: ROM PORT MAP(rom_read, rom_address,rom_data_out);
 mux_rom_fd_int: mux_2X1
 GENERIC MAP(16)
 PORT MAP(rom_data_out,"1011100000000000",FD_d_instruction,int_bit_out);
-opcode<=FD_q_instruction(15 downto 11);
+instr_opcode<=FD_d_instruction(15 downto 11);
 
 -- PC ADDRESS HANDLING  ===============
 read_port_address3 <= rom_data_out(2 downto 0);
