@@ -21,7 +21,8 @@ PORT(
 	DE_Rsrc2 : IN std_logic_vector(2 DOWNTO 0);
 	DE_WB_signal : IN std_logic;
 	DE_swap_signal : IN std_logic;
-	DE_memory_signal : IN std_logic;
+	DE_s1: IN std_logic;
+	DE_s0: IN std_logic;
 	DE_oneSrc_signal : IN std_logic;
 
 	--OUTPUT SIGNALS FOR FORWARDING TO FETCH
@@ -101,10 +102,10 @@ END PROCESS;
 --===============================================================================================================
 
 --================================ALU/ALU FORWARDING====================================================
-PROCESS(DE_WB_signal, DE_swap_signal,DE_oneSrc_signal, DE_memory_signal, EM_WB_signal, EM_swap_signal, EM_memory_signal, EM_Rdst1, EM_Rdst2, DE_Rsrc1, DE_Rsrc2)
+PROCESS(DE_WB_signal, DE_swap_signal,DE_oneSrc_signal, DE_s1, DE_s0, EM_WB_signal, EM_swap_signal, EM_memory_signal, EM_Rdst1, EM_Rdst2, DE_Rsrc1, DE_Rsrc2)
 BEGIN
 
-IF (DE_WB_signal = '1' or DE_swap_signal = '1') and (DE_memory_signal = '0') and ((EM_WB_signal = '1') or (EM_swap_signal = '1'))
+IF (((DE_WB_signal = '1') and (DE_s1 = '0') and (DE_s0 = '0')) or DE_swap_signal = '1') and ((EM_WB_signal = '1') or (EM_swap_signal = '1'))
 	and (EM_memory_signal = '0') THEN
 
 	IF EM_Rdst1 = DE_Rsrc1 THEN
@@ -124,7 +125,7 @@ ELSE
 	ALU_ALU_Rdst1_Rsrc2 <= '0';
 END IF;
 
-IF (DE_WB_signal = '1' or DE_swap_signal = '1') and (DE_memory_signal = '0') and (EM_swap_signal = '1') THEN
+IF (((DE_WB_signal = '1') and (DE_s1 = '0') and (DE_s0 = '0')) or DE_swap_signal = '1') and (EM_swap_signal = '1') THEN
 	
 	IF EM_Rdst2 = DE_Rsrc1 THEN
 		ALU_ALU_Rdst2_Rsrc1 <= '1';
@@ -145,10 +146,10 @@ END PROCESS;
 --===========================================================================================================
 
 --================================MEM/ALU FORWARDING====================================================
-PROCESS(DE_WB_signal, DE_swap_signal, DE_memory_signal,DE_oneSrc_signal, MW_WB_signal, MW_swap_signal, MW_Rdst1, MW_Rdst2, DE_Rsrc1, DE_Rsrc2)
+PROCESS(DE_WB_signal, DE_swap_signal, DE_s1, DE_s0, DE_oneSrc_signal, MW_WB_signal, MW_swap_signal, MW_Rdst1, MW_Rdst2, DE_Rsrc1, DE_Rsrc2)
 BEGIN
 
-IF (DE_WB_signal = '1' or DE_swap_signal = '1') and (DE_memory_signal = '0') and ((MW_WB_signal = '1') or (MW_swap_signal = '1')) THEN
+IF (((DE_WB_signal = '1') and (DE_s1 = '0') and (DE_s0 = '0')) or DE_swap_signal = '1') and ((MW_WB_signal = '1') or (MW_swap_signal = '1')) THEN
 	
 	IF MW_Rdst1 = DE_Rsrc1 THEN
 		MEM_ALU_Rdst1_Rsrc1 <= '1';
@@ -166,7 +167,7 @@ ELSE
 	MEM_ALU_Rdst1_Rsrc2 <= '0';
 END IF;
 
-IF (DE_WB_signal = '1' or DE_swap_signal = '1') and (DE_memory_signal = '0') and (MW_swap_signal = '1') THEN
+IF (((DE_WB_signal = '1') and (DE_s1 = '0') and (DE_s0 = '0')) or DE_swap_signal = '1') and (MW_swap_signal = '1') THEN
 	
 	IF MW_Rdst2 = DE_Rsrc1 THEN
 		MEM_ALU_Rdst2_Rsrc1 <= '1';
