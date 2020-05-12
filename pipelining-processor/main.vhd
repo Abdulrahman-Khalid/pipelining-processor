@@ -280,7 +280,8 @@ PORT(
 	DE_Rsrc2 : IN std_logic_vector(2 DOWNTO 0);
 	DE_WB_signal : IN std_logic;
 	DE_swap_signal : IN std_logic;
-	DE_memory_signal : IN std_logic;
+	DE_s1 : IN std_logic;
+	DE_s0 : IN std_logic;
 	DE_oneSrc_signal : IN std_logic;
 
 	--OUTPUT SIGNALS FOR FORWARDING TO FETCH
@@ -565,7 +566,8 @@ PORT MAP(
 	DE_q_Rsrc2,
 	DE_q_WB_signals(4),
 	DE_q_WB_signals(3),
-	DE_q_memory_signals(6),
+	DE_q_excute_signals(2),
+	DE_q_excute_signals(1),
 	DE_q_excute_signals(3),
 
 	ALU_F_Rdst1,
