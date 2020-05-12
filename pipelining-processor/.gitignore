@@ -4,5 +4,6 @@
 !/Do_Files/*
 !.gitignore
 !*.vhd
-!*.mem
+*.mem
 !readme.md
+../assembler/debug.txt

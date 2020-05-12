@@ -19,12 +19,14 @@ component jump_fsm is
 		input: in std_logic;
            	output: out std_logic_vector(1 DOWNTO 0));
 end component;
-
-signal output : std_logic_vector(1 downto 0);
+signal predicted_taken_but_not_taken,predicted_not_taken_but_taken,taken : std_logic;
 BEGIN
-
-not_taken_enable <= (not zero_flag_bit)and(jz_opcode);
-jfsm : jump_fsm port map (clk,rst,current_state,zero_flag_bit,output_state);
+	predicted_taken_but_not_taken <= (not zero_flag_bit) and current_state(1);
+	predicted_not_taken_but_taken <= zero_flag_bit and (not current_state(1));
+	not_taken_enable <= jz_opcode and(	-- If jz detected
+				predicted_taken_but_not_taken or predicted_not_taken_but_taken);
+	taken <= (zero_flag_bit and jz_opcode);
+jfsm : jump_fsm port map (clk,rst,current_state,taken,output_state);
 
 END a_jump_check_circuit;
 

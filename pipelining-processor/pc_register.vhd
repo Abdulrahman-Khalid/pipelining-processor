@@ -17,7 +17,11 @@ BEGIN
 
 PROCESS (d,CLK,RST,enable)
 	BEGIN
-		IF ((CLK = '1' and enable='1') or RST = '1') THEN
+		IF (RST = '1') THEN
+			IF (CLK = '1') THEN 
+				q <= d;
+			END IF;
+		ELSIF (rising_edge(CLK) and enable='1' ) THEN
 			q <= d;
 		END IF;
 	END PROCESS;

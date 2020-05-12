@@ -8,7 +8,9 @@ entity data2_selector is
      		RF_data2,temp_pc, shift_data,effective_address
 		,immediate_data: in std_logic_vector(n-1 DOWNTO 0);
      		opcode: in std_logic_vector(4 downto 0);
-     		Z: out std_logic_vector(n-1 DOWNTO 0));
+     		Z: out std_logic_vector(n-1 DOWNTO 0);
+		second_time_fetch_flush: out std_logic
+	);
 end data2_selector;
  
 architecture a_data2_selector of data2_selector is
@@ -18,4 +20,8 @@ begin
 		(immediate_data)	WHEN (opcode = "11010" or opcode = "01010")	ELSE
 		(effective_address)	WHEN (opcode = "11011" or opcode = "11100")	ELSE
 		(RF_data2)	 	WHEN (true);
+	
+	second_time_fetch_flush <=	('1')	WHEN (opcode = "11010" or opcode = "01010")	ELSE
+					('1')	WHEN (opcode = "11011" or opcode = "11100")	ELSE
+					('0')	 	WHEN (true);
 end a_data2_selector;

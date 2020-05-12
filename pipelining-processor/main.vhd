@@ -402,7 +402,8 @@ COMPONENT data2_selector is
      		RF_data2,temp_pc, shift_data,effective_address
 		,immediate_data: in std_logic_vector(n-1 DOWNTO 0);
      		opcode: in std_logic_vector(4 downto 0);
-     		Z: out std_logic_vector(n-1 DOWNTO 0));
+     		Z: out std_logic_vector(n-1 DOWNTO 0);
+		second_time_fetch_flush: out std_logic);
 END COMPONENT;
 -- =====================================================================================
 -- SIGNALS USED ========================================================================
@@ -410,7 +411,7 @@ END COMPONENT;
 signal  instruction_address, incremented_pc, address_loaded_from_memory,
 	address_to_pc, write_port_data1,write_port_data2,
 	read_port_data1,read_port_data2,read_port_data3,temp2_dataout,
-	output_port_data, alu_output, temp_pc_data, temp :std_logic_vector(31 downto 0);
+	output_port_data, alu_output, temp_pc_data :std_logic_vector(31 downto 0);
 signal 	shift_data: std_logic_vector(31 downto 0):=(OTHERS=>'0');
 signal 	effective_address: std_logic_vector(31 downto 0):=(OTHERS=>'0');
 signal	immediate_data: std_logic_vector(31 downto 0):=(OTHERS=>'0');
@@ -423,11 +424,12 @@ signal rom_data_out : std_logic_vector(WORD_SIZE - 1 DOWNTO 0);
 ---------------------------------------------------------------------------------------
 signal sp_out,m_mux1_out,m_mux2_out : std_logic_vector(2*WORD_SIZE-1 DOWNTO 0);
 signal m_sel,push_pop_sp_in,enable_sp_in,read_ram_in,write_ram_in,enable_ram_in,flag_enable_final : std_logic;
-signal flag_in,flag_out,flag_memory_in: std_logic_vector(flagsCount-1 downto 0);
+signal flag_memory_in,flag_data,alu_to_flag: std_logic_vector(flagsCount-1 downto 0);
 ---------------------------------------------------------------------------------------
 signal  jump_enable, not_taken_address_enable,jz_opcode,call_opcode,jmp_opcode, 
         connect_memory_pc, stall, address_loaded_from_memory_enable,flag_enable, jz_FD_opcode,
-	insert_bubble, flush,branch, flush_FD,
+	insert_bubble, flush,branch, flush_FD, disable_fetch_buffer, enable_state_memory,
+	second_time_fetch_flush,FD_Flush,
 ---------------------------------------------------------------------------------------
 --interrupt and return one bit buffers output signals
 	int_bit_out,int_push_bit_out,rbit_out,
@@ -553,7 +555,7 @@ hazards: HDU
 	 EM_q_memory_signals(7), branch, FD_q_instruction(5 downto 3), FD_q_instruction(8 downto 6),
 	 FD_q_instruction(2 downto 0),FD_q_instruction(8 downto 6), DE_q_Rdst1, DE_q_Rdst2, EM_q_Rdst1, rom_data_out(2 downto 0),
          insert_bubble, flush);
-stall <= insert_bubble or int_bit_out or rbit_out or flush_FD;
+stall <= insert_bubble or int_bit_out or rbit_out or flush_FD or disable_fetch_buffer;
 
 FU: forwarding_unit 
 PORT MAP( 
@@ -593,10 +595,7 @@ jmp_opcode<= (instr_opcode(4)and (not instr_opcode(3)) and (not instr_opcode(2))
 call_opcode<= (instr_opcode(4)and (not instr_opcode(3)) and instr_opcode(2)and (not instr_opcode(1)) and (not instr_opcode(0)));
 jump_enable <= ( 
 jmp_opcode or call_opcode or (
-jz_opcode and (
-(FD_d_predicted_state(1) and FD_d_predicted_state(0)) or  
-(FD_d_predicted_state(1) and (not FD_d_predicted_state(0)))    
-)));
+jz_opcode and FD_d_predicted_state(1))    );
 rom_read<='1';
 rom_address<=instruction_address(10 downto 0);
 read_port_address3 <= rom_data_out(2 downto 0);
@@ -634,8 +633,9 @@ INC: incrementor PORT MAP(CLK,RST,instruction_address,incremented_pc,'1');
 FD_d_state_address <= instruction_address(7 downto 0);
 flush_FD <= flush   or clr_int_EM or DE_q_excute_signals(0);
 --TODO set enable to fetch buffer
-FD_Enable <= '1';
-fdbuff : FD_buffer PORT MAP(CLK, RST, FD_Enable, flush_FD, FD_d_instruction, FD_q_instruction,
+FD_Enable <= not disable_fetch_buffer;
+FD_Flush <= flush_FD or second_time_fetch_flush;
+fdbuff : FD_buffer PORT MAP(CLK, RST, FD_Enable, FD_Flush, FD_d_instruction, FD_q_instruction,
  	FD_d_not_taken_address, FD_q_not_taken_address, FD_d_predicted_state, FD_q_predicted_state,
 	FD_d_state_address, FD_q_state_address);
 
@@ -643,7 +643,7 @@ fdbuff : FD_buffer PORT MAP(CLK, RST, FD_Enable, flush_FD, FD_d_instruction, FD_
 --DECODE STAGE ===========================================================================
 --========================================================================================
 opcode <= FD_q_instruction(15 downto 11);
-jz_FD_opcode<= (opcode(4)and (not opcode(3)) and (not opcode(2)) and opcode(1) and (not opcode(0)) );
+jz_FD_opcode <= (opcode(4)and (not opcode(3)) and (not opcode(2)) and opcode(1) and (not opcode(0)) );
 read_port_address1 <= FD_q_instruction(5 downto 3);
 read_port_address2 <= FD_q_instruction(8 downto 6);
 DE_d_data1 <= read_port_data1;
@@ -654,16 +654,19 @@ DE_d_Rsrc2 <= FD_q_instruction(8 downto 6);
 DE_d_WB_signals <= write_back&swap&output_port&rti_pop_flags&int_push_flags;
 DE_d_memory_signals <= load&enable_mem&read_write&enable_stack&push_pop&mem_to_pc&clr_rbit&clr_int;
 DE_d_excute_signals <= alu_operation&input_port&one_src&cu_s1&cu_s0&enable_temp2;
+-- Structural hazard, disable fetch buffer when found(due to alu operation followed by jz instruction)
+disable_fetch_buffer <= (flag_enable and jz_FD_opcode); 
+
 
 shift_data <= std_logic_vector("0000000000000000"&"00000000000"&FD_q_instruction(10 downto 6));
 effective_address <= std_logic_vector("000000000000"&FD_q_instruction(9 downto 6)&rom_data_out);
 immediate_data <= std_logic_vector("0000000000000000"&rom_data_out);
 -- DYNAMIC PREDICTION FOR JUMP INSTRUCTION =======================
 
-JCC: jump_check_circuit PORT MAP (CLK,RST,jz_FD_opcode,FD_q_predicted_state, flag_out(zFlag), output_state,
+JCC: jump_check_circuit PORT MAP (CLK,RST,jz_FD_opcode,FD_q_predicted_state, flag_data(zFlag), output_state,
 		not_taken_address_enable);
 
-SM: state_memory PORT MAP(CLK ,not_taken_address_enable,FD_q_state_address,FD_d_state_address ,
+SM: state_memory PORT MAP(CLK ,jz_FD_opcode,FD_q_state_address,FD_d_state_address ,
 		output_state , FD_d_predicted_state);
 
 -- Control Unit  ===================================
@@ -695,7 +698,7 @@ select_data2: data2_selector
      		read_port_data2,temp_pc_data,
 		shift_data,effective_address
 		,immediate_data,
-     		opcode,DE_d_data2);
+     		opcode,DE_d_data2,second_time_fetch_flush);
 
 --DECODE EXECUTE BUFFER ==============================
 debuff : DE_buffer PORT MAP(CLK, RST,DE_d_WB_signals,DE_q_WB_signals,
@@ -721,11 +724,11 @@ ALU1: ALU
 		DE_q_excute_signals(8 downto 5),
         	ALU_in1, ALU_in2,
 		alu_output,
-	        flag_out,flag_in);
+	        flag_data,alu_to_flag);
 
 data1_to_EMB_mux_4X1: mux_4X1 
  	port map(
-     		alu_output,ALU_in1,input_port_data,ALU_in2,
+     		alu_output,ALU_in1,input_port_data, ALU_in2, 
      		DE_q_excute_signals(1),DE_q_excute_signals(2), -- Mux selectors 
      		EM_d_data1);
 
@@ -752,8 +755,6 @@ PORT MAP(
 --========================================================================================
 --MEMORY STAGE ===========================================================================
 --========================================================================================
-
-
 write_ram_in <= (EM_q_memory_signals(5) or int_push_bit_out or int_push_flags_wb);
 read_ram_in <= not write_ram_in or rti_pop_flags_wb;
 enable_ram_in<= EM_q_memory_signals(6) or int_push_bit_out or int_push_flags_wb or rti_pop_flags_wb;
@@ -777,18 +778,22 @@ flag_enable <= 	(
 		 DE_q_excute_signals(5)
 		)
 		); 
+connect_memory_pc <= EM_q_memory_signals(2);
+push_pop_sp_in <=(int_push_bit_out or EM_q_memory_signals(3) or int_push_flags_wb) and not rti_pop_flags_wb;
+enable_sp_in <=   int_push_bit_out or EM_q_memory_signals(4) or int_push_flags_wb  or	   rti_pop_flags_wb;
+flag_enable_final <= flag_enable or rti_pop_flags_wb;
+m_sel<=enable_sp_in;
+
 -- RAM  ============================================
 RAM1: RAM
 PORT MAP(clk,ram_write,ram_read, ram_address,ram_data_in,ram_data_out);
 
-connect_memory_pc <= EM_q_memory_signals(2);
-push_pop_sp_in <=(int_push_bit_out or EM_q_memory_signals(3) or int_push_flags_wb) and not rti_pop_flags_wb;
-enable_sp_in <=   int_push_bit_out or EM_q_memory_signals(4) or int_push_flags_wb  or	   rti_pop_flags_wb;
+-- STACK POINTER ===================================
 sp: stack_pointer
 	PORT MAP( CLK,RST,push_pop_sp_in,enable_sp_in,sp_out
 	);
+
 -- RAM Address handling
-m_sel<=enable_sp_in;
 ram_in_mux2x1_1: mux_2X1
 	GENERIC MAP(32)
 	PORT MAP(
@@ -820,16 +825,15 @@ ram_out_mux2x1_1: mux_2X1
  	);
 -- RAM Data in handling
 
-flag_enable_final <= flag_enable or rti_pop_flags_wb;
 flags_mux: mux_2X1
 GENERIC MAP (flagsCount)
-PORT MAP(	flag_out,ram_data_out(flagsCount-1 downto 0),
+PORT MAP(	alu_to_flag,ram_data_out(flagsCount-1 downto 0),
 		flag_memory_in, rti_pop_flags_wb
 );
 flags: flag_reg 
 	PORT MAP(
 	 	CLK,RST, flag_enable_final,
-		flag_memory_in,flag_out
+		flag_memory_in,flag_data
 );
 temp2_register : registerr 
 	GENERIC MAP (32)
@@ -842,7 +846,7 @@ temp2_register : registerr
 datain_ram: RAM_datain 
 	GENERIC map(32)
  	port map(
-     		EM_q_data1,temp2_dataout,flag_out, -- Select one of these to put in the ram
+     		EM_q_data1,temp2_dataout,flag_data, -- Select one of these to put in the ram
      		int_push_bit_out,int_push_flags_wb,
     		ram_data_in
   	);
