@@ -9,13 +9,12 @@ entity jump_fsm is
 end entity;
 
 Architecture moore_fsm of jump_fsm is
-        signal next_state : std_logic_vector(1 DOWNTO 0);
     begin
     
         -- Produce next state 
         process (current_state,input,clk) 
         begin
-	if rising_edge(clk) then
+	if (clk = '1') then
             case current_state is
                 when "11" =>
                     if input = '1' then output <= "11"; else output <= "10"; end if;
