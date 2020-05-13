@@ -9,6 +9,7 @@ variables = {}  # have key => variable name, value => address of value of the va
 
 
 def over_write_memory(memoryTuples, ramFilePath):
+    generate_empty_memory(ramFilePath)
     memoryStartIndex = 0
     memBitsNum = bitsNum
     outputMemFile = open(ramFilePath, "r+")
