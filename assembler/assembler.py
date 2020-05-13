@@ -64,8 +64,6 @@ def check_syntax_error(instructionAddress, instruction, debugLines, instructionN
     one_operand = r"(^([pP][oO][pP]|[pP][uU][sS][hH]|[jJ][mM][pP]|[jJ][zZ]|[cC][aA][lL][lL]|[nN][oO][tT]|[iI][nN][cC]|[dD][eE][cC]|[oO][uU][tT]|[iI][nN])\s[rR][0-7])"
     # nop rti ret (3 instruction) # 16 bit
     no_operand = r"(^([nN][oO][pP]|[rR][tT][iI]|[rR][eE][tT]|[hH][lL][tT])\s{0,1}$)"
-    # setC clrC setZ clrZ setN clrN # 16 bit
-    set_clr = r"(^([sS][eE][tT]|[cC][lL][rR])[cCzZnN]\s{0,1}$)"
     org = r"(^\.[oO][rR][gG]\s{0,1}([0-7][0-9a-fA-F]{1,2}|[0-9a-fA-F]{1,2})\s{0,1}$)"
     newAddress = instructionAddress + 1
     code = ""
@@ -84,12 +82,6 @@ def check_syntax_error(instructionAddress, instruction, debugLines, instructionN
         if(bitsNum > len(code)):
             code += "0"*(bitsNum-len(code))
         debugLines.append([instruction, "no operand instruction", [
-                          instructionAddress], [code]])
-    elif re.match(set_clr, instruction, flags=0):
-        code = opCodeDict[instruction]
-        if(bitsNum > len(code)):
-            code += "0"*(bitsNum-len(code))
-        debugLines.append([instruction, "set or clr instruction", [
                           instructionAddress], [code]])
     elif re.match(shift_op, instruction, flags=0):
         arrayOp = (instruction.replace(',', ' ')).split()
@@ -128,8 +120,12 @@ def check_syntax_error(instructionAddress, instruction, debugLines, instructionN
     elif re.match(ldd_std_op, instruction, flags=0):
         arrayOp = (instruction.replace(',', ' ')).split()
         op, R, EA = [x for x in arrayOp]
-        code = opCodeDict[op] + bin(int(EA[0], bitsNum)
-                                    )[2:].zfill(4) + "000" + opCodeDict[R]
+        if(op == "ldd"):
+            code = opCodeDict[op] + bin(int(EA[0], bitsNum)
+                                        )[2:].zfill(4) + "000" + opCodeDict[R]
+        else:
+            code = opCodeDict[op] + bin(int(EA[0], bitsNum)
+                                        )[2:].zfill(4) + opCodeDict[R] + "000"
         instructionAddress2 = newAddress
         newAddress += 1
         if(len(EA) > 1):
@@ -192,9 +188,6 @@ def compile_code(lines, debugFileDir):
         if (instruction != ''):
             instructions.append((lineNum, instruction.lower()))
             debug.writelines(instruction.lower()+'\n')
-    # if there is no hlt at the end of the program just add it
-    if(instructions[-1][1] != "hlt"):
-        instructions.append((instructions[-1][0]+1, "hlt"))
     debugLines = []
     for instructionNum, instructionTuple in enumerate(instructions):
         try:
