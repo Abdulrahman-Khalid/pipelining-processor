@@ -1,6 +1,7 @@
-LIBRARY IEEE;
+library IEEE;
+use IEEE.std_logic_1164.all;
+USE IEEE.numeric_std.all;
 USE work.constants.all;
-USE IEEE.std_logic_1164.all;
 -- main entity of the processor
 ENTITY main IS
 PORT(	
@@ -17,394 +18,6 @@ ARCHITECTURE a_main OF main IS
 -- =====================================================================================
 -- COMPONENTS USED =====================================================================
 -- =====================================================================================  
--- Define ROM
-COMPONENT ROM IS
-	GENERIC (wordSize : integer := 16; addressWidth: integer := 11; ROMSize: integer := 2048);
-		PORT(	
-		enable  : IN std_logic;
-		address : IN  std_logic_vector(addressWidth - 1 DOWNTO 0);
-		dataOut  : OUT  std_logic_vector(wordSize - 1 DOWNTO 0));
-END COMPONENT ROM;
--- Define RAM
-COMPONENT RAM IS
-	GENERIC (wordSize : integer := 16; addressWidth: integer := 32; RAMSize: integer := 2**20-1);
-	PORT(	
-		CLK: IN std_logic;
-		W  : IN std_logic;
-		R  : IN std_logic;
-		address : IN  std_logic_vector(addressWidth - 1 DOWNTO 0);
-		dataIn  : IN  std_logic_vector(wordSize - 1 DOWNTO 0);
-		dataOut  : OUT  std_logic_vector(wordSize - 1 DOWNTO 0));
-END COMPONENT RAM;
--- Define data to RAM selector
-COMPONENT RAM_datain is
-GENERIC ( n : integer := 32);
- port(
-     data,temp2,flags : in std_logic_vector(n-1 DOWNTO 0);
-     temp2_enable,flags_enable: in STD_LOGIC;
-     data_out: out std_logic_vector(n-1 DOWNTO 0)
-  );
-END COMPONENT;
--- Define Mux 2x1
-COMPONENT mux_2X1 IS
-	GENERIC ( n : integer := 32);
-	PORT(
-		input1,input2 : IN std_logic_vector(n-1 DOWNTO 0);
-		output	      : OUT std_logic_vector(n-1 DOWNTO 0);
-		selector      : IN std_logic
-	);	
-END COMPONENT;
--- Define mux 4X1
-COMPONENT mux_4X1 is
-GENERIC ( n : integer := 32);
- port(
- 
-     A,B,C,D : in std_logic_vector(n-1 DOWNTO 0);
-     S0,S1: in STD_LOGIC;
-     Z: out std_logic_vector(n-1 DOWNTO 0)
-  );
-END COMPONENT;
--- Define Register 
-COMPONENT registerr IS
-GENERIC ( n : integer := 32);
-PORT( Clk,Rst 	: IN std_logic;
-	d	: IN std_logic_vector(n-1 DOWNTO 0);
-	q 	: OUT std_logic_vector(n-1 DOWNTO 0);
- 	enable: in std_logic
-);
-END COMPONENT;
--- Define Stack Pointer
-COMPONENT stack_pointer IS
-	GENERIC ( n : integer := 32);
-	PORT( CLK,RST,push_pop,enable_stack
-		      : IN std_logic;
-		    sp_out
-		      : OUT std_logic_vector(n-1 DOWNTO 0)
-	);
-END COMPONENT;
--- Define PC register
-COMPONENT pc_register IS
-GENERIC ( n : integer := 32;
-	  codeSegmentStart: integer :=500);
-PORT( Clk,Rst : IN std_logic;
-	    d : IN std_logic_vector(n-1 DOWNTO 0);
-	    q : OUT std_logic_vector(n-1 DOWNTO 0);
-	enable: in std_logic);
-END COMPONENT;
--- Define one bit buffer
-COMPONENT one_bit_buffer is
-    port (      clk,rst,set,clr	: in std_logic;
-		output	: out std_logic);
-END COMPONENT;
--- Define Control Unit
-COMPONENT control_unit is
-    port (      rst: in std_logic;
-		input: in std_logic_vector(4 DOWNTO 0);
-		alu_operation: out std_logic_vector(3 DOWNTO 0);
-		one_src, input_port,
-		enable_temp2,
-		cu_s0,cu_s1,			--aluops
-		enable_mem, read_write,		--memory ops
-		enable_stack, push_pop,
-		mem_to_pc, clr_rbit,
-		clr_int,
-		write_back, swap,		--write back ops
-		rti_pop_flags, int_push_flags, 
-		output_port,load
-			: out std_logic);
-end COMPONENT;
--- Define incrementor 
-COMPONENT incrementor IS
-GENERIC ( n : integer := 32);
-PORT( CLK,RST : IN std_logic;
-	    d : IN std_logic_vector(n-1 DOWNTO 0);
-	    q : OUT std_logic_vector(n-1 DOWNTO 0);
-		enable: in std_logic);
-END COMPONENT;
--- Define Pc circuit 
-COMPONENT pc_circuit IS
-GENERIC ( n : integer := 32);
--- Takes 4 addresses as inputs and select one of them
-PORT( 
-	unchanged_pc, incremented_pc, not_taken_address,
-	address_loaded_from_memory,jump_address : IN std_logic_vector(n-1 DOWNTO 0); 
-	unchanged_pc_enable, jump_enable, not_taken_address_enable,
-	address_loaded_from_memory_enable : in std_logic;
-	address_to_pc, not_taken_address_to_fetch_buffer : OUT std_logic_vector(n-1 DOWNTO 0));
-END COMPONENT;
--- Define memory used with jump states
-COMPONENT state_memory IS
-	Generic(addressBits: integer :=8;
-		wordSize: integer :=2);
-	PORT(
-		clk : IN std_logic;
-		we  : IN std_logic;
-		address_write,address_read : IN  std_logic_vector(addressBits - 1 DOWNTO 0);
-		datain  : IN  std_logic_vector(wordSize - 1 DOWNTO 0);
-		dataout : OUT std_logic_vector(wordSize - 1 DOWNTO 0));
-END COMPONENT;
-
--- Define dynamic jumo check prediction circuit
-COMPONENT jump_check_circuit is
-    port (      clk,rst: in std_logic;
-		jz_opcode: in std_logic;
-		current_state: in std_logic_vector(1 DOWNTO 0);
-		zero_flag_bit: in std_logic;
-           	output_state: out std_logic_vector(1 DOWNTO 0);
-		not_taken_enable: out std_logic);
-END COMPONENT;
-
--- Define register files that contain 3 read ports and 2 write ports
-COMPONENT register_files IS
-GENERIC ( n : integer := 32);
-PORT( 		Clk,Rst,wb_signal,swap_signal : IN std_logic;
-	    	write_port_data1,write_port_data2 : IN std_logic_vector(n-1 DOWNTO 0);
-	    	write_port_address1,write_port_address2 : IN std_logic_vector(2 DOWNTO 0);
-	    	read_port_data1,read_port_data2,read_port_data3 : OUT std_logic_vector(n-1 DOWNTO 0);
-	    	read_port_address1,read_port_address2,read_port_address3 : IN std_logic_vector(2 DOWNTO 0)
-);
-END COMPONENT;
-
--- Define buffers
-
-COMPONENT FD_buffer IS
-PORT( Clk,Reset, Enable, Flush : IN std_logic;
-	    d_instruction : IN std_logic_vector(15 DOWNTO 0);
-	    q_instruction : OUT std_logic_vector(15 DOWNTO 0);
-
-	    d_not_taken_address : IN std_logic_vector(31 DOWNTO 0);
-	    q_not_taken_address : OUT std_logic_vector(31 DOWNTO 0);
-
-	    d_predicted_state : IN std_logic_vector(1 DOWNTO 0);
-	    q_predicted_state : OUT std_logic_vector(1 DOWNTO 0);
-
-	    d_state_address : IN std_logic_vector(7 DOWNTO 0);
-	    q_state_address : OUT std_logic_vector(7 DOWNTO 0)
-);
-	
-END COMPONENT;
-
-COMPONENT DE_buffer IS
-PORT( Clk,Reset : IN std_logic;
-	    d_WB_signals : IN std_logic_vector(4 DOWNTO 0);
-	    q_WB_signals : OUT std_logic_vector(4 DOWNTO 0);
-
-	    d_memory_signals : IN std_logic_vector(7 DOWNTO 0);
-	    q_memory_signals : OUT std_logic_vector(7 DOWNTO 0);
-
-	    d_excute_signals : IN std_logic_vector(8 DOWNTO 0);
-	    q_excute_signals : OUT std_logic_vector(8 DOWNTO 0);
-
-	    d_data1 : IN std_logic_vector(31 DOWNTO 0);
-	    q_data1 : OUT std_logic_vector(31 DOWNTO 0);
-
-	    d_data2 : IN std_logic_vector(31 DOWNTO 0);
-	    q_data2 : OUT std_logic_vector(31 DOWNTO 0);
-
-	    d_Rsrc1 : IN std_logic_vector(2 DOWNTO 0);
-	    q_Rsrc1 : OUT std_logic_vector(2 DOWNTO 0);
-
-	    d_Rsrc2 : IN std_logic_vector(2 DOWNTO 0);
-	    q_Rsrc2 : OUT std_logic_vector(2 DOWNTO 0);
-
-	    d_Rdst1 : IN std_logic_vector(2 DOWNTO 0);
-	    q_Rdst1 : OUT std_logic_vector(2 DOWNTO 0);
-
-	    d_Rdst2 : IN std_logic_vector(2 DOWNTO 0);
-	    q_Rdst2 : OUT std_logic_vector(2 DOWNTO 0)
-);
-	
-END COMPONENT;
-
-COMPONENT EM_buffer IS
-PORT( Clk,Reset : IN std_logic;
-	    d_WB_signals : IN std_logic_vector(4 DOWNTO 0);
-	    q_WB_signals : OUT std_logic_vector(4 DOWNTO 0);
-
-	    d_memory_signals : IN std_logic_vector(7 DOWNTO 0);
-	    q_memory_signals : OUT std_logic_vector(7 DOWNTO 0);
-
-	    d_data1 : IN std_logic_vector(31 DOWNTO 0);
-	    q_data1 : OUT std_logic_vector(31 DOWNTO 0);
-
-	    d_data2 : IN std_logic_vector(31 DOWNTO 0);
-	    q_data2 : OUT std_logic_vector(31 DOWNTO 0);
-
-	    d_Rdst1 : IN std_logic_vector(2 DOWNTO 0);
-	    q_Rdst1 : OUT std_logic_vector(2 DOWNTO 0);
-
-	    d_Rdst2 : IN std_logic_vector(2 DOWNTO 0);
-	    q_Rdst2 : OUT std_logic_vector(2 DOWNTO 0)
-);
-	
-END COMPONENT;
-
-COMPONENT MW_buffer IS
-PORT( Clk,Reset : IN std_logic;
-	    d_WB_signals : IN std_logic_vector(4 DOWNTO 0);
-	    q_WB_signals : OUT std_logic_vector(4 DOWNTO 0);
-
-	    d_data1 : IN std_logic_vector(31 DOWNTO 0);
-	    q_data1 : OUT std_logic_vector(31 DOWNTO 0);
-
-	    d_data2 : IN std_logic_vector(31 DOWNTO 0);
-	    q_data2 : OUT std_logic_vector(31 DOWNTO 0);
-
-	    d_Rdst1 : IN std_logic_vector(2 DOWNTO 0);
-	    q_Rdst1 : OUT std_logic_vector(2 DOWNTO 0);
-
-	    d_Rdst2 : IN std_logic_vector(2 DOWNTO 0);
-	    q_Rdst2 : OUT std_logic_vector(2 DOWNTO 0)
-);
-	
-END COMPONENT;
-
---Define forwarding unit
-
-COMPONENT forwarding_unit IS
-PORT( 
-	EM_Rdst1 : IN std_logic_vector(2 DOWNTO 0);
-	EM_Rdst2 : IN std_logic_vector(2 DOWNTO 0);
-	EM_WB_signal: IN std_logic;
-	EM_swap_signal: IN std_logic;
-	EM_memory_signal : IN std_logic;
-
-	MW_Rdst1 : IN std_logic_vector(2 DOWNTO 0);
-	MW_Rdst2 : IN std_logic_vector(2 DOWNTO 0);
-	MW_WB_signal : IN std_logic;
-	MW_swap_signal : IN std_logic;
-
-	memory_instruction : IN std_logic_vector(15 DOWNTO 0);
-
-	DE_Rsrc1 : IN std_logic_vector(2 DOWNTO 0);
-	DE_Rsrc2 : IN std_logic_vector(2 DOWNTO 0);
-	DE_WB_signal : IN std_logic;
-	DE_swap_signal : IN std_logic;
-	DE_s1 : IN std_logic;
-	DE_s0 : IN std_logic;
-	DE_oneSrc_signal : IN std_logic;
-
-	--OUTPUT SIGNALS FOR FORWARDING TO FETCH
-	ALU_F_Rdst1 : OUT std_logic;
-	ALU_F_Rdst2 : OUT std_logic;
-	MEM_F_Rdst1 : OUT std_logic;
-	MEM_F_Rdst2 : OUT std_logic;
-
-	--OUTPUT SIGNALS FOR FORWARDING FROM ALU TO ALU
-	ALU_ALU_Rdst1_Rsrc1 : OUT std_logic;
-	ALU_ALU_Rdst1_Rsrc2 : OUT std_logic;
-	ALU_ALU_Rdst2_Rsrc1 : OUT std_logic;
-	ALU_ALU_Rdst2_Rsrc2 : OUT std_logic;
-
-	--OUTPUT SIGNALS FOR FORWARDING FROM MEMORY TO ALU
-	MEM_ALU_Rdst1_Rsrc1 : OUT std_logic;
-	MEM_ALU_Rdst1_Rsrc2 : OUT std_logic;
-	MEM_ALU_Rdst2_Rsrc1 : OUT std_logic;
-	MEM_ALU_Rdst2_Rsrc2 : OUT std_logic
-);
-	
-END COMPONENT;
-
---Define ALU input selectors
-
-COMPONENT ALU_in1_selector IS
-PORT( 
-	    EM_data1 : IN std_logic_vector(31 DOWNTO 0);
-	    EM_data2 : IN std_logic_vector(31 DOWNTO 0);
-	    MW_data1 : IN std_logic_vector(31 DOWNTO 0);
-	    MW_data2 : IN std_logic_vector(31 DOWNTO 0);
-
-	    DE_data1 : IN std_logic_vector(31 DOWNTO 0);
-
-	    ALU_ALU_Rdst1_Rsrc1 : IN std_logic;
-	    ALU_ALU_Rdst2_Rsrc1 : IN std_logic;
-	    MEM_ALU_Rdst1_Rsrc1 : IN std_logic;
-	    MEM_ALU_Rdst2_Rsrc1 : IN std_logic;
-
-	    ALU_in1 : OUT std_logic_vector(31 DOWNTO 0)
-
-);
-	
-END COMPONENT;
-
-COMPONENT ALU_in2_selector IS
-PORT( 
-	    EM_data1 : IN std_logic_vector(31 DOWNTO 0);
-	    EM_data2 : IN std_logic_vector(31 DOWNTO 0);
-	    MW_data1 : IN std_logic_vector(31 DOWNTO 0);
-	    MW_data2 : IN std_logic_vector(31 DOWNTO 0);
-
-	    DE_data2 : IN std_logic_vector(31 DOWNTO 0);
-
-	    ALU_ALU_Rdst1_Rsrc2 : IN std_logic;
-	    ALU_ALU_Rdst2_Rsrc2 : IN std_logic;
-	    MEM_ALU_Rdst1_Rsrc2 : IN std_logic;
-	    MEM_ALU_Rdst2_Rsrc2 : IN std_logic;
-
-	    ALU_in2 : OUT std_logic_vector(31 DOWNTO 0)
-
-);
-	
-END COMPONENT;
-
---Define fetch Rdst selector
-
-COMPONENT fetch_Rdst_selector IS
-PORT( 
-	    EM_data1 : IN std_logic_vector(31 DOWNTO 0);
-	    EM_data2 : IN std_logic_vector(31 DOWNTO 0);
-	    MW_data1 : IN std_logic_vector(31 DOWNTO 0);
-	    MW_data2 : IN std_logic_vector(31 DOWNTO 0);
-
-	    REG_data : IN std_logic_vector(31 DOWNTO 0);
-
-	    ALU_F_Rdst1 : IN std_logic;
-	    ALU_F_Rdst2 : IN std_logic;
-	    MEM_F_Rdst1 : IN std_logic;
-	    MEM_F_Rdst2 : IN std_logic;
-
-	    data : OUT std_logic_vector(31 DOWNTO 0)
-
-);
-	
-END COMPONENT;
-
---Define flag register
-COMPONENT flag_reg IS
-PORT( Clk,Reset, Enable : IN std_logic;
-
-	    d_flags : IN std_logic_vector(2 DOWNTO 0);
-	    q_flags : OUT std_logic_vector(2 DOWNTO 0)
-);
-	
-END COMPONENT;
-
--- Define ALU 
-COMPONENT ALU is
-    generic(n: integer := 32; m: integer := 4);
-    port(operationControl: in std_logic_vector(m-1 downto 0);
-        A, B: in std_logic_vector(n-1 downto 0);
-        F: out std_logic_vector(n-1 downto 0);
-        flagIn: in std_logic_vector(flagsCount-1 downto 0);
-        flagOut: out std_logic_vector(flagsCount-1 downto 0));
-END COMPONENT;
--- Define Hazard Detection Unit
-COMPONENT HDU is
-    generic(n: integer := 3);
-    port(WB_CU, WB_ID_E, WB_E_MEM, swap_CU, swap_ID_E, load_ID_E, load_E_MEM, Branch_MEM: in std_logic;
-        Rsrc1_F_ID, Rsrc2_F_ID, Rdst1_F_ID, Rdst2_F_ID, Rdst1_ID_E, Rdst2_ID_E, Rdst_E_MEM, Rdst_MEM: in std_logic_vector(n-1 downto 0);
-        insert_bubble, flush: out std_logic);
-END COMPONENT;
-
-COMPONENT data2_selector is
-	GENERIC ( n : integer := 32);
- 	port(
-     		RF_data2,temp_pc, shift_data,effective_address
-		,immediate_data: in std_logic_vector(n-1 DOWNTO 0);
-     		opcode: in std_logic_vector(4 downto 0);
-     		Z: out std_logic_vector(n-1 DOWNTO 0);
-		second_time_fetch_flush: out std_logic);
-END COMPONENT;
 -- =====================================================================================
 -- SIGNALS USED ========================================================================
 -- =====================================================================================
@@ -436,6 +49,10 @@ signal  jump_enable, not_taken_address_enable,jz_opcode,call_opcode,jmp_opcode,
 	ret_opcode,rti_opcode,rti_or_ret,
 	clr_int_EM,clr_rbit_EM,
 	int_push_flags_wb,rti_pop_flags_wb,
+---------------------------------------------------------------------------------------
+-- HDU load use case signals:
+	one_src_F_ID,
+    two_src_F_ID,
 ---------------------------------------------------------------------------------------
 --CONTOL UNIT OUTPUT SIGNALS
 	cu_rst,		--Resets control unit
@@ -538,26 +155,26 @@ rti_opcode<= (instr_opcode(4)and (not instr_opcode(3)) and  instr_opcode(2) and 
 ret_opcode<= (instr_opcode(4)and (not instr_opcode(3)) and  instr_opcode(2) and (not instr_opcode(1)) and instr_opcode(0) );
 rti_or_ret<= ret_opcode or rti_opcode;
 ----------------------------------------------------------------------------------------
-INT_BIT: one_bit_buffer
+INT_BIT: entity work.one_bit_buffer
 PORT MAP(	CLK,RST,INT,clr_int_EM,int_bit_out);
-RBIT: one_bit_buffer
+RBIT: entity work.one_bit_buffer
 PORT MAP(	CLK,RST,rti_or_ret, clr_rbit_EM,rbit_out);
 --TODO change int_push_flags to take from WB stage
-INT_PUSH_BIT: one_bit_buffer 
+INT_PUSH_BIT: entity work.one_bit_buffer 
 PORT MAP(	CLK,RST,MW_q_WB_signals(0),int_push_bit_out,int_push_bit_out);
 
 -- Hazard detection unit
 branch <= jz_opcode or jmp_opcode or call_opcode;
-hazards: HDU 
+hazards: entity work.HDU 
     generic map(3)
     -- Branch_MEM is '1' if jmp or jz or call from memory
     port map(write_back, DE_q_WB_signals(4), EM_q_WB_signals(4), swap, DE_q_WB_signals(3), DE_q_memory_signals(7),
-	 EM_q_memory_signals(7), branch, FD_q_instruction(5 downto 3), FD_q_instruction(8 downto 6),
-	 FD_q_instruction(2 downto 0),FD_q_instruction(8 downto 6), DE_q_Rdst1, DE_q_Rdst2, EM_q_Rdst1, rom_data_out(2 downto 0),
-         insert_bubble, flush);
+	 EM_q_memory_signals(7), branch, one_src_F_ID, two_src_F_ID, FD_q_instruction(5 downto 3), FD_q_instruction(8 downto 6),
+	 FD_q_instruction(2 downto 0),FD_q_instruction(8 downto 6), DE_q_Rdst1, DE_q_Rdst2, EM_q_Rdst1, rom_data_out(2 downto 0), 
+	 insert_bubble, flush);
 stall <= insert_bubble or int_bit_out or rbit_out or flush_FD or disable_fetch_buffer;
 
-FU: forwarding_unit 
+FU: entity work.forwarding_unit 
 PORT MAP( 
 	EM_q_Rdst1, EM_q_Rdst2, EM_q_WB_signals(4), EM_q_WB_signals(3), EM_q_memory_signals(6),
 	MW_q_Rdst1, MW_q_Rdst2, MW_q_WB_signals(4), MW_q_WB_signals(3),
@@ -601,21 +218,21 @@ rom_address<=instruction_address(10 downto 0);
 read_port_address3 <= rom_data_out(2 downto 0);
 
 -- ROM  ===============================
-ROM1: ROM PORT MAP(rom_read, rom_address,rom_data_out);
+ROM1: entity work.ROM PORT MAP(rom_read, rom_address,rom_data_out);
 
 -- ROM connections ====================
-mux_rom_fd_int: mux_2X1
+mux_rom_fd_int: entity work.mux_2X1
 GENERIC MAP(16)
 PORT MAP(rom_data_out,"1011100000000000",FD_d_instruction,int_bit_out);
 instr_opcode<=FD_d_instruction(15 downto 11);
 
 -- PC ADDRESS HANDLING  ===============
-FSEL: fetch_Rdst_selector
+FSEL: entity work.fetch_Rdst_selector
 PORT MAP(EM_q_data1, EM_q_data2, MW_q_data1, MW_q_data2,read_port_data3 ,ALU_F_Rdst1, ALU_F_Rdst2, MEM_F_Rdst1,
 	MEM_F_Rdst2, FSEL_out
 );
 -- Used to choose the appropiate address of next instruction depend on certain enables.
-PC_ADDRESS_CIRCUIT: pc_circuit PORT MAP( 
+PC_ADDRESS_CIRCUIT: entity work.pc_circuit PORT MAP( 
 	instruction_address, incremented_pc, FD_q_not_taken_address,
 	address_loaded_from_memory,FSEL_out ,
 	stall, jump_enable, not_taken_address_enable,
@@ -623,19 +240,19 @@ PC_ADDRESS_CIRCUIT: pc_circuit PORT MAP(
 	address_to_pc, FD_d_not_taken_address );
 address_loaded_from_memory_enable <= (connect_memory_pc or RST);
 -- PC register used to get the instruction address to fetch it
-PC : pc_register PORT MAP(CLK,RST,address_to_pc,instruction_address,'1');
+PC : entity work.pc_register PORT MAP(CLK,RST,address_to_pc,instruction_address,'1');
 -- Enabled when call instruction is fetched to push the next pc value
-TEMP_PC : pc_register PORT MAP(CLK,RST,incremented_pc,temp_pc_data,call_opcode);
+TEMP_PC : entity work.pc_register PORT MAP(CLK,RST,incremented_pc,temp_pc_data,call_opcode);
 -- IncrementPC by one
-INC: incrementor PORT MAP(CLK,RST,instruction_address,incremented_pc,'1');
+INC: entity work.incrementor PORT MAP(CLK,RST,instruction_address,incremented_pc,'1');
 
 --FETCH DECODE BUFFER==============================
 FD_d_state_address <= instruction_address(7 downto 0);
-flush_FD <= flush   or clr_int_EM or DE_q_excute_signals(0);
+flush_FD <= flush or clr_int_EM or DE_q_excute_signals(0);
 --TODO set enable to fetch buffer
 FD_Enable <= not disable_fetch_buffer;
 FD_Flush <= flush_FD or second_time_fetch_flush;
-fdbuff : FD_buffer PORT MAP(CLK, RST, FD_Enable, FD_Flush, FD_d_instruction, FD_q_instruction,
+fdbuff : entity work.FD_buffer PORT MAP(CLK, RST, FD_Enable, FD_Flush, FD_d_instruction, FD_q_instruction,
  	FD_d_not_taken_address, FD_q_not_taken_address, FD_d_predicted_state, FD_q_predicted_state,
 	FD_d_state_address, FD_q_state_address);
 
@@ -663,15 +280,17 @@ effective_address <= std_logic_vector("000000000000"&FD_q_instruction(9 downto 6
 immediate_data <= std_logic_vector("0000000000000000"&rom_data_out);
 -- DYNAMIC PREDICTION FOR JUMP INSTRUCTION =======================
 
-JCC: jump_check_circuit PORT MAP (CLK,RST,jz_FD_opcode,FD_q_predicted_state, flag_data(zFlag), output_state,
+JCC: entity work.jump_check_circuit PORT MAP (CLK,RST,jz_FD_opcode,FD_q_predicted_state, flag_data(zFlag), output_state,
 		not_taken_address_enable);
 
-SM: state_memory PORT MAP(CLK ,jz_FD_opcode,FD_q_state_address,FD_d_state_address ,
+SM: entity work.state_memory PORT MAP(CLK ,jz_FD_opcode,FD_q_state_address,FD_d_state_address ,
 		output_state , FD_d_predicted_state);
 
+-- F_ID_Signals  ===================================
+HDU_F_ID_Singals: entity work.F_ID_signals PORT MAP(instr_opcode, one_src_F_ID, two_src_F_ID);
 -- Control Unit  ===================================
 cu_rst <= DE_q_excute_signals(0) or insert_bubble or RST or clr_int_EM;
-CU: control_unit
+CU: entity work.control_unit
 port MAP (      cu_rst, opcode,
 		alu_operation,
 		one_src, input_port,
@@ -686,14 +305,14 @@ port MAP (      cu_rst, opcode,
 		output_port,load);
 
 -- Register Files  ==================================
-RF: register_files 
+RF: entity work.register_files 
 PORT MAP(	CLK,RST,MW_q_WB_signals(4),MW_q_WB_signals(3),write_port_data1,write_port_data2,
 	    	write_port_address1,write_port_address2, 
 	    	read_port_data1,read_port_data2,read_port_data3,
 	    	read_port_address1,read_port_address2,read_port_address3);
 
 -- Select data 2 input to the buffer
-select_data2: data2_selector 
+select_data2: entity work.data2_selector 
  	port map(
      		read_port_data2,temp_pc_data,
 		shift_data,effective_address
@@ -701,7 +320,7 @@ select_data2: data2_selector
      		opcode,DE_d_data2,second_time_fetch_flush);
 
 --DECODE EXECUTE BUFFER ==============================
-debuff : DE_buffer PORT MAP(CLK, RST,DE_d_WB_signals,DE_q_WB_signals,
+debuff : entity work.DE_buffer PORT MAP(CLK, RST,DE_d_WB_signals,DE_q_WB_signals,
 	DE_d_memory_signals , DE_q_memory_signals,
 	DE_d_excute_signals , DE_q_excute_signals, DE_d_data1, DE_q_data1, DE_d_data2, DE_q_data2,
 	DE_d_Rsrc1, DE_q_Rsrc1, DE_d_Rsrc2, DE_q_Rsrc2, DE_d_Rdst1, DE_q_Rdst1, DE_d_Rdst2, DE_q_Rdst2);
@@ -712,32 +331,34 @@ debuff : DE_buffer PORT MAP(CLK, RST,DE_d_WB_signals,DE_q_WB_signals,
 --===========================================================================================
 EM_d_Rdst1 <= DE_q_Rdst1;
 EM_d_Rdst2 <= DE_q_Rdst2;
-ALUSEL1: ALU_in1_selector -- First operand selector
+-- First operand selectors
+ALUSEL1: entity work.ALU_in1_selector 
 	PORT MAP(EM_q_data1, EM_q_data2, MW_q_data1, MW_q_data2, DE_q_data1, ALU_ALU_Rdst1_Rsrc1, ALU_ALU_Rdst2_Rsrc1,
 		MEM_ALU_Rdst1_Rsrc1,MEM_ALU_Rdst2_Rsrc1, ALU_in1);
 
-ALUSEL2: ALU_in2_selector -- Second operand selector
+-- Second operand selector
+ALUSEL2: entity work.ALU_in2_selector 
 	PORT MAP(EM_q_data1, EM_q_data2, MW_q_data1, MW_q_data2, DE_q_data2, ALU_ALU_Rdst1_Rsrc2, ALU_ALU_Rdst2_Rsrc2,
 		MEM_ALU_Rdst1_Rsrc2,MEM_ALU_Rdst2_Rsrc2, ALU_in2);
-ALU1: ALU
+ALU1: entity work.ALU
     	port map(
 		DE_q_excute_signals(8 downto 5),
         	ALU_in1, ALU_in2,
 		alu_output,
 	        flag_data,alu_to_flag);
 
-data1_to_EMB_mux_4X1: mux_4X1 
+data1_to_EMB_mux_4X1: entity work.mux_4X1 
  	port map(
      		alu_output,ALU_in1,input_port_data, ALU_in2, 
      		DE_q_excute_signals(1),DE_q_excute_signals(2), -- Mux selectors 
      		EM_d_data1);
 
-data2_to_EMB_mux: mux_2X1
+data2_to_EMB_mux: entity work.mux_2X1
 	GENERIC MAP(32)
 	PORT MAP(ALU_in2,ALU_in1,EM_d_data2,DE_q_WB_signals(3));
 
 --EXECUTE MEMORY BUFFER =============================
-embuff : EM_buffer
+embuff : entity work.EM_buffer
 PORT MAP(
 	Clk,RST,DE_q_WB_signals, EM_q_WB_signals,DE_q_memory_signals,EM_q_memory_signals,
 	EM_d_data1,EM_q_data1,EM_d_data2,EM_q_data2,EM_d_Rdst1,EM_q_Rdst1,EM_d_Rdst2,EM_q_Rdst2
@@ -785,30 +406,30 @@ flag_enable_final <= flag_enable or rti_pop_flags_wb;
 m_sel<=enable_sp_in;
 
 -- RAM  ============================================
-RAM1: RAM
+RAM1: entity work.RAM
 PORT MAP(clk,ram_write,ram_read, ram_address,ram_data_in,ram_data_out);
 
 -- STACK POINTER ===================================
-sp: stack_pointer
+sp: entity work.stack_pointer
 	PORT MAP( CLK,RST,push_pop_sp_in,enable_sp_in,sp_out
 	);
 
 -- RAM Address handling
-ram_in_mux2x1_1: mux_2X1
+ram_in_mux2x1_1: entity work.mux_2X1
 	GENERIC MAP(32)
 	PORT MAP(
 		EM_q_data2,sp_out,
 		m_mux1_out,
 		m_sel
 	);	
-ram_in_mux2x1_2: mux_2X1
+ram_in_mux2x1_2: entity work.mux_2X1
 	GENERIC MAP(32)
 	PORT MAP(
 		m_mux1_out,"00000000000000000000000000000010",
 		m_mux2_out,
 		clr_int_EM
 	);
-ram_in_mux2x1_3: mux_2X1
+ram_in_mux2x1_3: entity work.mux_2X1
 	GENERIC MAP(32)
 	PORT MAP(
 		m_mux2_out,"00000000000000000000000000000000",
@@ -816,7 +437,7 @@ ram_in_mux2x1_3: mux_2X1
 		RST
 	);
 
-ram_out_mux2x1_1: mux_2X1
+ram_out_mux2x1_1: entity work.mux_2X1
  	GENERIC MAP(32)
  	PORT MAP(
  		EM_q_data1,ram_data_out,
@@ -825,17 +446,17 @@ ram_out_mux2x1_1: mux_2X1
  	);
 -- RAM Data in handling
 
-flags_mux: mux_2X1
+flags_mux: entity work.mux_2X1
 GENERIC MAP (flagsCount)
 PORT MAP(	alu_to_flag,ram_data_out(flagsCount-1 downto 0),
 		flag_memory_in, rti_pop_flags_wb
 );
-flags: flag_reg 
+flags: entity work.flag_reg 
 	PORT MAP(
 	 	CLK,RST, flag_enable_final,
 		flag_memory_in,flag_data
 );
-temp2_register : registerr 
+temp2_register : entity work.registerr 
 	GENERIC MAP (32)
 	PORT MAP( 	
 		CLK,RST,
@@ -843,7 +464,7 @@ temp2_register : registerr
 		temp2_dataout,	
 	 	DE_q_excute_signals(0)
 );
-datain_ram: RAM_datain 
+datain_ram: entity work.RAM_datain 
 	GENERIC map(32)
  	port map(
      		EM_q_data1,temp2_dataout,flag_data, -- Select one of these to put in the ram
@@ -852,7 +473,7 @@ datain_ram: RAM_datain
   	);
 
 --MEMORY WRITE BACK BUFFER===========================
-mwbuff : MW_buffer
+mwbuff : entity work.MW_buffer
 PORT MAP(
 	Clk,RST,MW_d_WB_signals, MW_q_WB_signals,
 	MW_d_data1,MW_q_data1,MW_d_data2,MW_q_data2,MW_d_Rdst1,MW_q_Rdst1,MW_d_Rdst2,MW_q_Rdst2
@@ -876,7 +497,7 @@ write_port_address1 <= MW_q_Rdst1;
 write_port_data2 <= MW_q_data2;
 write_port_address2 <= MW_q_Rdst2;
 
-output_port_register : registerr 
+output_port_register : entity work.registerr 
 	GENERIC MAP (32)
 	PORT MAP( 	
 		CLK,RST,
