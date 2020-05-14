@@ -9,6 +9,6 @@ Architecture F_ID_signals_arch of F_ID_signals is
     begin
         -- one src => 10000 11100 01000 01001 01010 
         -- two src => 00100 00101 00110 00111 11101
-        one_src_F_ID <= not input(2) when input(4) = '0' else '1' when input = "10000" or input = "11100" else '0';
+        one_src_F_ID <= not input(2) when input(4) = '0' and input /= "00000" else '1' when input = "10000" or input = "11100" else '0';
         two_src_F_ID <= '1' when (input(4 downto 2) = "001") or (input = "11101") else '0';
 end Architecture;

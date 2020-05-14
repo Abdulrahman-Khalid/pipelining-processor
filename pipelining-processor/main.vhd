@@ -52,7 +52,8 @@ signal  jump_enable, not_taken_address_enable,jz_opcode,call_opcode,jmp_opcode,
 ---------------------------------------------------------------------------------------
 -- HDU load use case signals:
 	one_src_F_ID,
-    two_src_F_ID,
+	two_src_F_ID,
+	nop_detected,
 ---------------------------------------------------------------------------------------
 --CONTOL UNIT OUTPUT SIGNALS
 	cu_rst,		--Resets control unit
@@ -287,7 +288,7 @@ SM: entity work.state_memory PORT MAP(CLK ,jz_FD_opcode,FD_q_state_address,FD_d_
 		output_state , FD_d_predicted_state);
 
 -- F_ID_Signals  ===================================
-HDU_F_ID_Singals: entity work.F_ID_signals PORT MAP(instr_opcode, one_src_F_ID, two_src_F_ID);
+HDU_F_ID_Singals: entity work.F_ID_signals PORT MAP(opcode, one_src_F_ID, two_src_F_ID);
 -- Control Unit  ===================================
 cu_rst <= DE_q_excute_signals(0) or insert_bubble or RST or clr_int_EM;
 CU: entity work.control_unit
