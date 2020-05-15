@@ -4,28 +4,35 @@
 .org 2
 100
 .org 10
-not r1
-nop
-inc r1
 in r1
 in r2
-not r2
-inc r1
-dec r2
-out r1
-out r2
+in r3
+in r4
+iadd r3,r5,2
+add r1,r4,r4
+sub r5,r4,r6
+and r7,r6,r6
+or r2,r1,r1
+shl r2,2
+shr r2,3
+swap r2,r5
+add r5,r2,r2
 ----------------------------- END CODE -------------------------------
 ----------------------------- START INSTUCTION INFORMATION LIST -----------------------------
 (instruction = 10) (instruction type = hex instruction) (address in hex = 0x0) (instruction code = 0000000000010000)
 (instruction = 100) (instruction type = hex instruction) (address in hex = 0x2) (instruction code = 0000000100000000)
-(instruction = not r1) (instruction type = one operand instruction) (address in hex = 0x10) (instruction code = 0000100000001001)
-(instruction = nop) (instruction type = no operand instruction) (address in hex = 0x11) (instruction code = 0000000000000000)
-(instruction = inc r1) (instruction type = one operand instruction) (address in hex = 0x12) (instruction code = 0001000000001001)
-(instruction = in r1) (instruction type = one operand instruction) (address in hex = 0x13) (instruction code = 1000100000000001)
-(instruction = in r2) (instruction type = one operand instruction) (address in hex = 0x14) (instruction code = 1000100000000010)
-(instruction = not r2) (instruction type = one operand instruction) (address in hex = 0x15) (instruction code = 0000100000010010)
-(instruction = inc r1) (instruction type = one operand instruction) (address in hex = 0x16) (instruction code = 0001000000001001)
-(instruction = dec r2) (instruction type = one operand instruction) (address in hex = 0x17) (instruction code = 0001100000010010)
-(instruction = out r1) (instruction type = one operand instruction) (address in hex = 0x18) (instruction code = 1000000000001001)
-(instruction = out r2) (instruction type = one operand instruction) (address in hex = 0x19) (instruction code = 1000000000010010)
+(instruction = in r1) (instruction type = one operand instruction) (address in hex = 0x10) (instruction code = 1000100000000001)
+(instruction = in r2) (instruction type = one operand instruction) (address in hex = 0x11) (instruction code = 1000100000000010)
+(instruction = in r3) (instruction type = one operand instruction) (address in hex = 0x12) (instruction code = 1000100000000011)
+(instruction = in r4) (instruction type = one operand instruction) (address in hex = 0x13) (instruction code = 1000100000000100)
+(instruction = iadd r3,r5,2) (instruction type = iadd instruction) two addresses in memory
+ (1- address in hex = 0x14 , 2- address in hex = 0x15) (instruction code = 0101000000011101 and 0000000000000010)
+(instruction = add r1,r4,r4) (instruction type = three operand instruction) (address in hex = 0x16) (instruction code = 0010000001100100)
+(instruction = sub r5,r4,r6) (instruction type = three operand instruction) (address in hex = 0x17) (instruction code = 0010100101100110)
+(instruction = and r7,r6,r6) (instruction type = three operand instruction) (address in hex = 0x18) (instruction code = 0011000111110110)
+(instruction = or r2,r1,r1) (instruction type = three operand instruction) (address in hex = 0x19) (instruction code = 0011100010001001)
+(instruction = shl r2,2) (instruction type = shift  instruction) (address in hex = 0x1a) (instruction code = 0100000010010010)
+(instruction = shr r2,3) (instruction type = shift  instruction) (address in hex = 0x1b) (instruction code = 0100100011010010)
+(instruction = swap r2,r5) (instruction type = swap operand instruction) (address in hex = 0x1c) (instruction code = 1110100010101101)
+(instruction = add r5,r2,r2) (instruction type = three operand instruction) (address in hex = 0x1d) (instruction code = 0010000101010010)
 ----------------------------- END INSTUCTION INFORMATION LIST -------------------------------
