@@ -50,11 +50,6 @@ signal  jump_enable, not_taken_address_enable,jz_opcode,call_opcode,jmp_opcode,
 	clr_int_EM,clr_rbit_EM,
 	int_push_flags_wb,rti_pop_flags_wb,
 ---------------------------------------------------------------------------------------
--- HDU load use case signals:
-	one_src_F_ID,
-	two_src_F_ID,
-	nop_detected,
----------------------------------------------------------------------------------------
 --CONTOL UNIT OUTPUT SIGNALS
 	cu_rst,		--Resets control unit
 	one_src, 	--One source signal
@@ -170,7 +165,7 @@ hazards: entity work.HDU
     generic map(3)
     -- Branch_MEM is '1' if jmp or jz or call from memory
     port map(write_back, DE_q_WB_signals(4), EM_q_WB_signals(4), swap, DE_q_WB_signals(3), DE_q_memory_signals(7),
-	 EM_q_memory_signals(7), branch, one_src_F_ID, two_src_F_ID, FD_q_instruction(5 downto 3), FD_q_instruction(8 downto 6),
+	 EM_q_memory_signals(7), branch, FD_q_instruction(5 downto 3), FD_q_instruction(8 downto 6),
 	 FD_q_instruction(2 downto 0),FD_q_instruction(8 downto 6), DE_q_Rdst1, DE_q_Rdst2, EM_q_Rdst1, MW_q_Rdst1, rom_data_out(2 downto 0), 
 	 flush);
 	 -- load_MEM_WB, Rdst_MEM_WB
@@ -289,8 +284,6 @@ JCC: entity work.jump_check_circuit PORT MAP (CLK,RST,jz_FD_opcode,FD_q_predicte
 SM: entity work.state_memory PORT MAP(CLK ,jz_FD_opcode,FD_q_state_address,FD_d_state_address ,
 		output_state , FD_d_predicted_state);
 
--- F_ID_Signals  ===================================
-HDU_F_ID_Singals: entity work.F_ID_signals PORT MAP(opcode, one_src_F_ID, two_src_F_ID);
 -- Control Unit  ===================================
 cu_rst <= DE_q_excute_signals(0) or RST or clr_int_EM;
 CU: entity work.control_unit

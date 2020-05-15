@@ -10,18 +10,7 @@ package constants is
     constant R5: std_logic_vector(2 downto 0) := "101";
     constant R6: std_logic_vector(2 downto 0) := "110";
     constant R7: std_logic_vector(2 downto 0) := "111";
---ALU operations
-    -- constant OperationNOP: std_logic_vector(4 downto 0) :=  "0000000000000000";
-    -- constant OperationINC: std_logic_vector(4 downto 0) :=  "0001000000";
-    -- constant OperationDEC: std_logic_vector(4 downto 0) :=  "0001100000";
-    -- constant OperationNOT: std_logic_vector(4 downto 0) :=  "0000100000";
-    -- constant OperationADD: std_logic_vector(4 downto 0) :=  "0010000";
-    -- constant OperationSUB: std_logic_vector(4 downto 0) :=  "0010100";
-    -- constant OperationAND: std_logic_vector(4 downto 0) :=  "0011000";
-    -- constant OperationOR: std_logic_vector(4 downto 0) :=  "0011100";
-    -- constant OperationSHL: std_logic_vector(4 downto 0) :=  "01000";
-    -- constant OperationSHR: std_logic_vector(4 downto 0) :=  "01001";
-    -- constant OperationIADD: std_logic_vector(4 downto 0) :=  "0101000000";
+    --ALU operations
     constant OperationNOP: std_logic_vector(3 downto 0) :=  "0000";
     constant OperationNOT: std_logic_vector(3 downto 0) :=  "0001";
     constant OperationINC: std_logic_vector(3 downto 0) :=  "0010";
