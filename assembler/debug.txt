@@ -10,7 +10,7 @@ in r3
 in r4
 iadd r3,r5,2
 add r1,r4,r4
-sub r5,r4,r6
+sub r4,r5,r6
 and r7,r6,r6
 or r2,r1,r1
 shl r2,2
@@ -28,7 +28,7 @@ add r5,r2,r2
 (instruction = iadd r3,r5,2) (instruction type = iadd instruction) two addresses in memory
  (1- address in hex = 0x14 , 2- address in hex = 0x15) (instruction code = 0101000000011101 and 0000000000000010)
 (instruction = add r1,r4,r4) (instruction type = three operand instruction) (address in hex = 0x16) (instruction code = 0010000001100100)
-(instruction = sub r5,r4,r6) (instruction type = three operand instruction) (address in hex = 0x17) (instruction code = 0010100101100110)
+(instruction = sub r4,r5,r6) (instruction type = three operand instruction) (address in hex = 0x17) (instruction code = 0010100100101110)
 (instruction = and r7,r6,r6) (instruction type = three operand instruction) (address in hex = 0x18) (instruction code = 0011000111110110)
 (instruction = or r2,r1,r1) (instruction type = three operand instruction) (address in hex = 0x19) (instruction code = 0011100010001001)
 (instruction = shl r2,2) (instruction type = shift  instruction) (address in hex = 0x1a) (instruction code = 0100000010010010)

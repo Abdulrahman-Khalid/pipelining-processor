@@ -14,6 +14,10 @@ force -freeze sim:/main/INT 0 0
 force -freeze sim:/main/input_port_data 32'h5 0
 run 100
 force -freeze sim:/main/RST 0
-run 600
-force -freeze sim:/main/input_port_data 32'h10 0
-run 800
+run 300
+force -freeze sim:/main/input_port_data 32'h19 0
+run 100
+force -freeze sim:/main/input_port_data 32'hFFFD 0
+run 100
+force -freeze sim:/main/input_port_data 32'hF320 0
+run 1300
