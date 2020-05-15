@@ -19,7 +19,7 @@ ldd r2, 18
 (instruction = 10) (instruction type = hex instruction) (address in hex = 0x0) (instruction code = 0000000000010000)
 (instruction = 100) (instruction type = hex instruction) (address in hex = 0x2) (instruction code = 0000000100000000)
 (instruction = ldd r2, 18) (instruction type = ldd or std instruction) two addresses in memory
- (1- address in hex = 0x10 , 2- address in hex = 0x11) (instruction code = 1101100001000010 and 0000000000001000)
+ (1- address in hex = 0x10 , 2- address in hex = 0x11) (instruction code = 1101100000000010 and 0000000000011000)
 (instruction = 30) (instruction type = hex instruction) (address in hex = 0x18) (instruction code = 0000000000110000)
 (instruction = 40) (instruction type = hex instruction) (address in hex = 0x19) (instruction code = 0000000001000000)
 (instruction = 50) (instruction type = hex instruction) (address in hex = 0x1a) (instruction code = 0000000001010000)

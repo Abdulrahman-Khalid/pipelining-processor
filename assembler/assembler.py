@@ -121,6 +121,7 @@ def check_syntax_error(instructionAddress, instruction, debugLines, instructionN
     elif re.match(ldd_std_op, instruction, flags=0):
         arrayOp = (instruction.replace(',', ' ')).split()
         op, R, EA = [x for x in arrayOp]
+        EA = (5-len(EA))*"0" + EA
         if(op == "ldd"):
             code = opCodeDict[op] + bin(int(EA[0], bitsNum)
                                         )[2:].zfill(4) + "000" + opCodeDict[R]
@@ -129,10 +130,7 @@ def check_syntax_error(instructionAddress, instruction, debugLines, instructionN
                                         )[2:].zfill(4) + opCodeDict[R] + "000"
         instructionAddress2 = newAddress
         newAddress += 1
-        if(len(EA) > 1):
-            code2 = bin(int(EA[1:], bitsNum))[2:].zfill(bitsNum)
-        else:
-            code2 = "0"*bitsNum
+        code2 = bin(int(EA[1:], bitsNum))[2:].zfill(bitsNum)
         debugLines.append([instruction, "ldd or std instruction", [
                           instructionAddress, instructionAddress2], [code, code2]])
     elif re.match(ldm_op, instruction, flags=0):
