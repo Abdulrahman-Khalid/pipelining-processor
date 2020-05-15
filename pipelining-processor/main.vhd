@@ -170,9 +170,11 @@ hazards: entity work.HDU
     generic map(3)
     -- Branch_MEM is '1' if jmp or jz or call from memory
     port map(write_back, DE_q_WB_signals(4), EM_q_WB_signals(4), swap, DE_q_WB_signals(3), DE_q_memory_signals(7),
-	 EM_q_memory_signals(7), branch, one_src_F_ID, two_src_F_ID, FD_q_instruction(5 downto 3), FD_q_instruction(8 downto 6),
-	 FD_q_instruction(2 downto 0),FD_q_instruction(8 downto 6), DE_q_Rdst1, DE_q_Rdst2, EM_q_Rdst1, rom_data_out(2 downto 0), 
+	 EM_q_memory_signals(7), MW_q_memory_signals(7), branch, one_src_F_ID, two_src_F_ID, FD_q_instruction(5 downto 3), FD_q_instruction(8 downto 6),
+	 FD_q_instruction(2 downto 0),FD_q_instruction(8 downto 6), DE_q_Rdst1, DE_q_Rdst2, EM_q_Rdst1, MW_q_Rdst1, rom_data_out(2 downto 0), 
 	 insert_bubble, flush);
+	 -- load_MEM_WB, Rdst_MEM_WB
+	
 stall <= insert_bubble or int_bit_out or rbit_out or flush_FD or disable_fetch_buffer;
 
 FU: entity work.forwarding_unit 
