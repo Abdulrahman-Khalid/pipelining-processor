@@ -40,9 +40,9 @@ signal m_sel,push_pop_sp_in,enable_sp_in,read_ram_in,write_ram_in,enable_ram_in,
 signal flag_memory_in,flag_data,alu_to_flag: std_logic_vector(flagsCount-1 downto 0);
 ---------------------------------------------------------------------------------------
 signal  jump_enable, not_taken_address_enable,jz_opcode,call_opcode,jmp_opcode, 
-        connect_memory_pc, stall, address_loaded_from_memory_enable,flag_enable, jz_FD_opcode,
-	insert_bubble, flush,branch, flush_FD, disable_fetch_buffer, enable_state_memory,
-	second_time_fetch_flush,FD_Flush,
+		connect_memory_pc, stall, address_loaded_from_memory_enable,flag_enable, jz_FD_opcode, 
+		flush,branch, flush_FD, disable_fetch_buffer, enable_state_memory,
+		second_time_fetch_flush,FD_Flush,
 ---------------------------------------------------------------------------------------
 --interrupt and return one bit buffers output signals
 	int_bit_out,int_push_bit_out,rbit_out,
@@ -172,10 +172,10 @@ hazards: entity work.HDU
     port map(write_back, DE_q_WB_signals(4), EM_q_WB_signals(4), swap, DE_q_WB_signals(3), DE_q_memory_signals(7),
 	 EM_q_memory_signals(7), branch, one_src_F_ID, two_src_F_ID, FD_q_instruction(5 downto 3), FD_q_instruction(8 downto 6),
 	 FD_q_instruction(2 downto 0),FD_q_instruction(8 downto 6), DE_q_Rdst1, DE_q_Rdst2, EM_q_Rdst1, MW_q_Rdst1, rom_data_out(2 downto 0), 
-	 insert_bubble, flush);
+	 flush);
 	 -- load_MEM_WB, Rdst_MEM_WB
 	
-stall <= insert_bubble or int_bit_out or rbit_out or flush_FD or disable_fetch_buffer;
+stall <=  int_bit_out or rbit_out or flush_FD or disable_fetch_buffer;
 
 FU: entity work.forwarding_unit 
 PORT MAP( 
@@ -292,7 +292,7 @@ SM: entity work.state_memory PORT MAP(CLK ,jz_FD_opcode,FD_q_state_address,FD_d_
 -- F_ID_Signals  ===================================
 HDU_F_ID_Singals: entity work.F_ID_signals PORT MAP(opcode, one_src_F_ID, two_src_F_ID);
 -- Control Unit  ===================================
-cu_rst <= DE_q_excute_signals(0) or insert_bubble or RST or clr_int_EM;
+cu_rst <= DE_q_excute_signals(0) or RST or clr_int_EM;
 CU: entity work.control_unit
 port MAP (      cu_rst, opcode,
 		alu_operation,

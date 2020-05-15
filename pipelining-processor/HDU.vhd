@@ -23,7 +23,7 @@ entity HDU is
     -- Rdst1_Fetch is Rdst from fetch memory
     port(WB_CU, WB_ID_E, WB_E_MEM, swap_CU, swap_ID_E, load_ID_E, load_E_MEM, Branch_Fetch, one_src_F_ID, two_src_F_ID: in std_logic;
         Rsrc1_F_ID, Rsrc2_F_ID, Rdst1_F_ID, Rdst2_F_ID, Rdst1_ID_E, Rdst2_ID_E, Rdst_E_MEM, Rdst_MEM_WB, Rdst_Fetch: in std_logic_vector(n-1 downto 0);
-        insert_bubble, flush: out std_logic);
+        flush: out std_logic);
 end entity;
 
 
@@ -35,7 +35,5 @@ architecture HDU_Arch of HDU is
 
         flush2 <= '1' when ( load_E_MEM = '1' and Branch_Fetch = '1' and (Rdst_E_MEM = Rdst_Fetch) ) or ( ((swap_ID_E = '1' and Rdst2_ID_E = Rdst_Fetch) or ((WB_ID_E = '1' or swap_ID_E = '1') and Rdst1_ID_E = Rdst_Fetch)) and Branch_Fetch = '1' and load_E_MEM = '0' ) else '0';
                 
-        flush <= '0' when flush1 = '1' or flush2 = '1' else '0';
-
-        insert_bubble <= '1' when (((Rsrc1_F_ID = Rdst1_ID_E and (one_src_F_ID = '1' or two_src_F_ID = '1')) or (two_src_F_ID = '1' and Rsrc2_F_ID = Rdst1_ID_E)) and load_E_MEM = '1') else '0'; -- load use case
+        flush <= '1' when flush1 = '1' or flush2 = '1' else '0';
 end architecture;
