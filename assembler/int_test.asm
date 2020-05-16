@@ -6,7 +6,7 @@
 10
 #you should ignore empty lines
 .org 2 
-100 # this interupt address
+90 # this interupt address
 
 
 
@@ -14,11 +14,10 @@
 NOP
 Not R1
 inc r2
-inc r3
-dec r4
+SHR R1,3
+SHL r2,7
 
 
-HLT
 
 .ORG 90
 Not r5
