@@ -170,7 +170,7 @@ hazards: entity work.HDU
 	 flush);
 	 -- load_MEM_WB, Rdst_MEM_WB
 	
-stall <=  int_bit_out or rbit_out or disable_fetch_buffer;-- or flush_FD;
+stall <=  int_bit_out or rbit_out or disable_fetch_buffer or flush or DE_q_excute_signals(0);
 
 FU: entity work.forwarding_unit 
 PORT MAP( 
