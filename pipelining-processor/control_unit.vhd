@@ -68,7 +68,8 @@ Architecture behavioural of control_unit is
 		elsif input = "11100" then  cu_s1<='0';cu_s0<='1';		--STD
 		read_write<='1';enable_mem<='1';
 		elsif input = "11101" then swap<='1'; cu_s1<='1';cu_s0<='1';	--SWAP
-		write_back<='1';						
+		write_back<='1';		
+		elsif input = "10010" then alu_operation <= "1111"; cu_s1<='1';	--JZ			
 		end if;
 
 		

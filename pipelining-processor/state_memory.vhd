@@ -32,7 +32,7 @@ ARCHITECTURE a_state_memory OF state_memory IS
 	BEGIN
 		PROCESS(clk) IS
 			BEGIN
-				IF rising_edge(clk) THEN  
+				IF falling_edge(clk) THEN  
 					IF we = '1' THEN
 						state_memory(to_integer(unsigned(address_write))) <= datain;
 					END IF;

@@ -7,7 +7,8 @@ entity jump_check_circuit is
 		current_state: in std_logic_vector(1 DOWNTO 0);
 		zero_flag_bit: in std_logic;
            	output_state: out std_logic_vector(1 DOWNTO 0);
-		not_taken_enable: out std_logic);
+		not_taken_enable: out std_logic;
+		disable: in std_logic);
 end entity;
 
 
@@ -23,8 +24,9 @@ signal predicted_taken_but_not_taken,predicted_not_taken_but_taken,taken : std_l
 BEGIN
 	predicted_taken_but_not_taken <= (not zero_flag_bit) and current_state(1);
 	predicted_not_taken_but_taken <= zero_flag_bit and (not current_state(1));
-	not_taken_enable <= jz_opcode and(	-- If jz detected
-				predicted_taken_but_not_taken or predicted_not_taken_but_taken);
+	not_taken_enable <= 	jz_opcode 		-- If jz detected
+				and(predicted_taken_but_not_taken or predicted_not_taken_but_taken)
+				and(not disable);
 	taken <= (zero_flag_bit and jz_opcode);
 jfsm : jump_fsm port map (clk,rst,current_state,taken,output_state);
 
