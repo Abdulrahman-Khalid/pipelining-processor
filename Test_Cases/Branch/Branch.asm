@@ -54,7 +54,7 @@ NOP
 
 
 .ORG 300
-Add R3,R6,R6 #R6=400
+Add R3,R6,R6 #R6=400    
 Add R1,R2,R1 #R1=80, C->0,N=0, Z=0
 ret
 INC R7           #this should not be executed
