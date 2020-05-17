@@ -8,6 +8,7 @@ add wave -position end sim:/main/sp/sp_out
 add wave -position end sim:/main/RF/regiTri
 add wave -position end sim:/main/flags/q_flags
 add wave -position end sim:/main/hazards/flush
+add wave -position end sim:/main/hazards/insert_bubble
 
 force -freeze sim:/main/CLK 1 0, 0 {50 ns} -r 100
 force -freeze sim:/main/RST 1 0

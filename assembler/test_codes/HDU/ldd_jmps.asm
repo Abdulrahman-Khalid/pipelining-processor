@@ -31,7 +31,7 @@ std r2, 1E                                                                      
 LDD r2, 18      # r2 -> 30                                                      # 1F, 20
 add r2,r3,r1    # r1 -> 30      # no stall r1 -> 30                             # 21
 # jump to address 30 
-jmp r1                          # stall 3 times                                 # 22
+jmp r1                          # stall 2 times                                 # 22
 
 .org 30
 ldd r1, 1A     # r1 -> 40                                                       # 30, 31                        
@@ -59,5 +59,6 @@ add r6, r7, r7                                                                  
 jmp r1         # r2 -> 200                  # 1 stall(swap)                     #72
 
 .org 80
-ldm r1, 0                                                                       #80, 81
-ldm r2, 0                                                                       #82, 83
+push r1
+pop r1
+jmp r1 

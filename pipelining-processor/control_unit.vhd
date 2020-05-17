@@ -60,7 +60,7 @@ Architecture behavioural of control_unit is
 		elsif input = "11000" then cu_s1<='0';cu_s0<='1'; 		--PUSH
 		enable_stack<='1'; push_pop<='1'; read_write<='1';enable_mem<='1';
 		elsif input = "11001" then enable_mem<='1'; enable_stack<='1'; 	--POP
-		push_pop<='0'; read_write<='0'; write_back<='1';
+		push_pop<='0'; read_write<='0'; write_back<='1';  load <='1';
 		elsif input = "11010" then write_back<='1'; cu_s1<='1';		--LDM -- modified
 		cu_s0<='1';
 		elsif input = "11011" then enable_mem<='1'; write_back<='1';	--LDD

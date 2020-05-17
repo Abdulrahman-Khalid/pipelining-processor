@@ -41,7 +41,7 @@ signal flag_memory_in,flag_temp_in,flag_data,alu_to_flag,flag_jz_data: std_logic
 ---------------------------------------------------------------------------------------
 signal  jump_enable, not_taken_address_enable,jz_opcode,call_opcode,jmp_opcode, 
 		connect_memory_pc, stall, address_loaded_from_memory_enable,flag_enable, jz_FD_opcode, 
-		flush,branch, flush_FD, disable_fetch_buffer, enable_state_memory,
+		insert_bubble, flush,branch, flush_FD, disable_fetch_buffer, enable_state_memory,
 		second_time_fetch_flush,FD_Flush,flag_enable_jz,state_memory_enable,
 ---------------------------------------------------------------------------------------
 --interrupt and return one bit buffers output signals
@@ -49,6 +49,10 @@ signal  jump_enable, not_taken_address_enable,jz_opcode,call_opcode,jmp_opcode,
 	ret_opcode,rti_opcode,rti_or_ret,
 	clr_int_EM,clr_rbit_EM,
 	int_push_flags_wb,rti_pop_flags_wb,clr_rbit_clr,
+---------------------------------------------------------------------------------------
+-- HDU load use case signals:
+	one_src_F_ID,
+	two_src_F_ID,
 ---------------------------------------------------------------------------------------
 --CONTOL UNIT OUTPUT SIGNALS
 	cu_rst,		--Resets control unit
@@ -168,12 +172,12 @@ hazards: entity work.HDU
     generic map(3)
     -- Branch_MEM is '1' if jmp or jz or call from memory
     port map(write_back, DE_q_WB_signals(4), EM_q_WB_signals(4), swap, DE_q_WB_signals(3), DE_q_memory_signals(7),
-	 EM_q_memory_signals(7), branch, FD_q_instruction(5 downto 3), FD_q_instruction(8 downto 6),
+	 EM_q_memory_signals(7), branch, one_src_F_ID, two_src_F_ID, FD_q_instruction(5 downto 3), FD_q_instruction(8 downto 6),
 	 FD_q_instruction(2 downto 0),FD_q_instruction(8 downto 6), DE_q_Rdst1, DE_q_Rdst2, EM_q_Rdst1, MW_q_Rdst1, rom_data_out(2 downto 0), 
-	 flush);
+	 insert_bubble ,flush);
 	 -- load_MEM_WB, Rdst_MEM_WB
 	
-stall <=  int_bit_out or rbit_out or disable_fetch_buffer or flush or DE_q_excute_signals(0) or DE_q_memory_signals(1) or rti_or_ret;
+stall <=  insert_bubble or int_bit_out or rbit_out or disable_fetch_buffer or flush or DE_q_excute_signals(0) or DE_q_memory_signals(1) or rti_or_ret;
 
 FU: entity work.forwarding_unit 
 PORT MAP( 
@@ -287,9 +291,10 @@ JCC: entity work.jump_check_circuit PORT MAP (CLK,RST,jz_FD_opcode,FD_q_predicte
 state_memory_enable <= jz_FD_opcode and (not disable_fetch_buffer);
 SM: entity work.state_memory PORT MAP(CLK ,state_memory_enable,FD_q_state_address,FD_d_state_address ,
 		output_state , FD_d_predicted_state);
-
+-- F_ID_Signals  ===================================
+HDU_F_ID_Singals: entity work.F_ID_signals PORT MAP(opcode, one_src_F_ID, two_src_F_ID);
 -- Control Unit  ===================================
-cu_rst <= DE_q_excute_signals(0) or RST or clr_int_EM or disable_fetch_buffer;
+cu_rst <= DE_q_excute_signals(0) or RST or insert_bubble or clr_int_EM or disable_fetch_buffer;
 CU: entity work.control_unit
 port MAP (      cu_rst, opcode,
 		alu_operation,
