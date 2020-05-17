@@ -48,7 +48,7 @@ signal  jump_enable, not_taken_address_enable,jz_opcode,call_opcode,jmp_opcode,
 	int_bit_out,int_push_bit_out,rbit_out,
 	ret_opcode,rti_opcode,rti_or_ret,
 	clr_int_EM,clr_rbit_EM,
-	int_push_flags_wb,rti_pop_flags_wb,
+	int_push_flags_wb,rti_pop_flags_wb,clr_rbit_clr,
 ---------------------------------------------------------------------------------------
 --CONTOL UNIT OUTPUT SIGNALS
 	cu_rst,		--Resets control unit
@@ -149,12 +149,15 @@ BEGIN
 -- 3 one bit buffers  ==================================================================
 rti_opcode<= (instr_opcode(4)and (not instr_opcode(3)) and  instr_opcode(2) and instr_opcode(1) and (not instr_opcode(0)) );
 ret_opcode<= (instr_opcode(4)and (not instr_opcode(3)) and  instr_opcode(2) and (not instr_opcode(1)) and instr_opcode(0) );
-rti_or_ret<= ret_opcode or rti_opcode;
+rti_or_ret<= (ret_opcode or rti_opcode) and not clr_rbit and not clr_rbit_EM and not clr_rbit_clr;
 ----------------------------------------------------------------------------------------
 INT_BIT: entity work.one_bit_buffer
 PORT MAP(	CLK,RST,INT,clr_int_EM,int_bit_out);
 RBIT: entity work.one_bit_buffer
 PORT MAP(	CLK,RST,rti_or_ret, clr_rbit_EM,rbit_out);
+
+RBIT_CLR: entity work.one_bit_buffer
+PORT MAP(	CLK,RST,clr_rbit, clr_rbit_clr,clr_rbit_clr);
 --TODO change int_push_flags to take from WB stage
 INT_PUSH_BIT: entity work.one_bit_buffer 
 PORT MAP(	CLK,RST,MW_q_WB_signals(0),int_push_bit_out,int_push_bit_out);
@@ -170,7 +173,7 @@ hazards: entity work.HDU
 	 flush);
 	 -- load_MEM_WB, Rdst_MEM_WB
 	
-stall <=  int_bit_out or rbit_out or disable_fetch_buffer or flush or DE_q_excute_signals(0);
+stall <=  int_bit_out or rbit_out or disable_fetch_buffer or flush or DE_q_excute_signals(0) or DE_q_memory_signals(1) or rti_or_ret;
 
 FU: entity work.forwarding_unit 
 PORT MAP( 
@@ -246,7 +249,7 @@ INC: entity work.incrementor PORT MAP(CLK,RST,instruction_address,incremented_pc
 
 --FETCH DECODE BUFFER==============================
 FD_d_state_address <= instruction_address(7 downto 0);
-flush_FD <= flush or clr_int_EM or DE_q_excute_signals(0);
+flush_FD <= flush or clr_int_EM or DE_q_excute_signals(0) or clr_rbit_EM or DE_q_memory_signals(1) or clr_rbit;
 -- fetch buffer enable andflush signal
 FD_Enable <= not disable_fetch_buffer;
 FD_Flush <= flush_FD or second_time_fetch_flush or not_taken_address_enable;
