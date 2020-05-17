@@ -1,52 +1,40 @@
 ----------------------------- START CODE -----------------------------
-.org 2
-100
-.org 100
-pop r3
-add r1, r3, r5
-rti
 .org 0
 10
+.org 2
+100
 .org 10
-ldm r0,0018
-ldm r1,001c
-ldm r2,0016
-ldm r3,0002
-inc r4
-dec r3
-jz r1
-jmp r0
-inc r5
-jmp r2
-nop
-nop
-nop
-nop
-nop
+in r2
+in r3
+in r4
+ldm r1,f5
+push r1
+push r2
+pop r1
+pop r2
+std r2,200
+std r1,202
+ldd r3,202
+ldd r4,200
 ----------------------------- END CODE -------------------------------
 ----------------------------- START INSTUCTION INFORMATION LIST -----------------------------
 (instruction = 10) (instruction type = hex instruction) (address in hex = 0x0) (instruction code = 0000000000010000)
 (instruction = 100) (instruction type = hex instruction) (address in hex = 0x2) (instruction code = 0000000100000000)
-(instruction = ldm r0,0018) (instruction type = ldm instruction) two addresses in memory
- (1- address in hex = 0x10 , 2- address in hex = 0x11) (instruction code = 1101000000000000 and 0000000000011000)
-(instruction = ldm r1,001c) (instruction type = ldm instruction) two addresses in memory
- (1- address in hex = 0x12 , 2- address in hex = 0x13) (instruction code = 1101000000000001 and 0000000000011100)
-(instruction = ldm r2,0016) (instruction type = ldm instruction) two addresses in memory
- (1- address in hex = 0x14 , 2- address in hex = 0x15) (instruction code = 1101000000000010 and 0000000000010110)
-(instruction = ldm r3,0002) (instruction type = ldm instruction) two addresses in memory
- (1- address in hex = 0x16 , 2- address in hex = 0x17) (instruction code = 1101000000000011 and 0000000000000010)
-(instruction = inc r4) (instruction type = one operand instruction) (address in hex = 0x18) (instruction code = 0001000000100100)
-(instruction = dec r3) (instruction type = one operand instruction) (address in hex = 0x19) (instruction code = 0001100000011011)
-(instruction = jz r1) (instruction type = one operand instruction) (address in hex = 0x1a) (instruction code = 1001000000000001)
-(instruction = jmp r0) (instruction type = one operand instruction) (address in hex = 0x1b) (instruction code = 1001100000000000)
-(instruction = inc r5) (instruction type = one operand instruction) (address in hex = 0x1c) (instruction code = 0001000000101101)
-(instruction = jmp r2) (instruction type = one operand instruction) (address in hex = 0x1d) (instruction code = 1001100000000010)
-(instruction = nop) (instruction type = no operand instruction) (address in hex = 0x1e) (instruction code = 0000000000000000)
-(instruction = nop) (instruction type = no operand instruction) (address in hex = 0x1f) (instruction code = 0000000000000000)
-(instruction = nop) (instruction type = no operand instruction) (address in hex = 0x20) (instruction code = 0000000000000000)
-(instruction = nop) (instruction type = no operand instruction) (address in hex = 0x21) (instruction code = 0000000000000000)
-(instruction = nop) (instruction type = no operand instruction) (address in hex = 0x22) (instruction code = 0000000000000000)
-(instruction = pop r3) (instruction type = one operand instruction) (address in hex = 0x100) (instruction code = 1100100000000011)
-(instruction = add r1, r3, r5) (instruction type = three operand instruction) (address in hex = 0x101) (instruction code = 0010000001011101)
-(instruction = rti) (instruction type = no operand instruction) (address in hex = 0x102) (instruction code = 1011000000000000)
+(instruction = in r2) (instruction type = one operand instruction) (address in hex = 0x10) (instruction code = 1000100000000010)
+(instruction = in r3) (instruction type = one operand instruction) (address in hex = 0x11) (instruction code = 1000100000000011)
+(instruction = in r4) (instruction type = one operand instruction) (address in hex = 0x12) (instruction code = 1000100000000100)
+(instruction = ldm r1,f5) (instruction type = ldm instruction) two addresses in memory
+ (1- address in hex = 0x13 , 2- address in hex = 0x14) (instruction code = 1101000000000001 and 0000000011110101)
+(instruction = push r1) (instruction type = one operand instruction) (address in hex = 0x15) (instruction code = 1100000000001001)
+(instruction = push r2) (instruction type = one operand instruction) (address in hex = 0x16) (instruction code = 1100000000010010)
+(instruction = pop r1) (instruction type = one operand instruction) (address in hex = 0x17) (instruction code = 1100100000000001)
+(instruction = pop r2) (instruction type = one operand instruction) (address in hex = 0x18) (instruction code = 1100100000000010)
+(instruction = std r2,200) (instruction type = ldd or std instruction) two addresses in memory
+ (1- address in hex = 0x19 , 2- address in hex = 0x1a) (instruction code = 1110000000010000 and 0000001000000000)
+(instruction = std r1,202) (instruction type = ldd or std instruction) two addresses in memory
+ (1- address in hex = 0x1b , 2- address in hex = 0x1c) (instruction code = 1110000000001000 and 0000001000000010)
+(instruction = ldd r3,202) (instruction type = ldd or std instruction) two addresses in memory
+ (1- address in hex = 0x1d , 2- address in hex = 0x1e) (instruction code = 1101100000000011 and 0000001000000010)
+(instruction = ldd r4,200) (instruction type = ldd or std instruction) two addresses in memory
+ (1- address in hex = 0x1f , 2- address in hex = 0x20) (instruction code = 1101100000000100 and 0000001000000000)
 ----------------------------- END INSTUCTION INFORMATION LIST -------------------------------

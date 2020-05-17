@@ -1,11 +1,22 @@
 vsim -gui work.main
+add wave sim:/main/INT
+add wave sim:/main/input_port_data
+add wave sim:/main/output_port_data
 add wave sim:/main/instruction_address
-add wave -position 1 sim:/main/HDU_F_ID_Singals/*
-add wave -position end sim:/main/hazards/*
+add wave sim:/main/opcode
+add wave -position end sim:/main/sp/sp_out
+add wave -position end sim:/main/RF/regiTri
+add wave -position end sim:/main/flags/q_flags
+add wave -position end sim:/main/hazards/flush
+
 force -freeze sim:/main/CLK 1 0, 0 {50 ns} -r 100
 force -freeze sim:/main/RST 1 0
 force -freeze sim:/main/INT 0 0
-force -freeze sim:/main/input_port_data 1010 0
-run 
+force -freeze sim:/main/input_port_data 32'h0CDAFE19 0
+run 100
 force -freeze sim:/main/RST 0
-run 6000
+run 300
+force -freeze sim:/main/input_port_data 32'hFFFF 0
+run 100
+force -freeze sim:/main/input_port_data 32'hF320 0
+run 300
