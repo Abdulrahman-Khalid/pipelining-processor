@@ -9,8 +9,7 @@ inputs/inputTEST.txt
 pipelining-processor/out.mem
 assembler/out.mem
 pipelining-processor/transcript
-
-*.mem
+# files
 *.wlf
 *.xlsx
 *.vstf

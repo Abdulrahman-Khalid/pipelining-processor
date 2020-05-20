@@ -10,22 +10,22 @@
 100
 
 .ORG 10
-in R1     #R1=30                                            (Done)
-in R2     #R2=50                                            (Done)
-in R3     #R3=100                                           (Done)
-in R4     #R4=300                                           (Done)
-in R6     #R6=FFFFFFFF                                      (Done)
-in R7     #R7=FFFFFFFF                                      (Done)
-Push R4   #sp=7FC, M[7FE, 7FF]=300                          (Done)
-JMP R1                                                      (Done)
-INC R7	  # this statement shouldn't be executed,           (Done)
- 
-#check flag forwarding  
+in R1     #R1=30     
+in R2     #R2=50
+in R3     #R3=100
+in R4     #R4=30
+in R6     #R6=FFFFFFFF
+in R7     #R7=FFFFFFFF
+Push R4   #sp=7FC, M[7FE, 7FF]=300
+JMP R1
+INC R7	  # this statement shouldn't be executed,
+
+#check flag forwarding
 .ORG 30
-AND R1,R5,R5   #R5=0 , Z = 1                                (Done)
-            #try interrupt here                             (Done)
-JZ  R2      #Jump taken, Z = 0                              (Done)
-INC R7      #this statement shouldn't be executed           (Done)
+AND R1,R5,R5   #R5=0 , Z = 1                                
+            #try interrupt here                             
+JZ  R2      #Jump taken, Z = 0                              
+INC R7      #this statement shouldn't be executed           
 
 #check on flag updated on jump
 .ORG 50
