@@ -26,4 +26,11 @@ run 100
 force -freeze sim:/main/input_port_data 32'hFFFFFFFF 0
 run 400
 force -freeze sim:/main/input_port_data 32'h200 0
-run 2700
+run 2000
+# interupt after call
+force -freeze sim:/main/INT 1 0
+run 100
+force -freeze sim:/main/INT 0 0
+run 1500
+# run last 2 nop
+run 200

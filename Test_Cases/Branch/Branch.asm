@@ -10,7 +10,7 @@
 100
 
 .ORG 10
-in R1     #R1=30     
+in R1     #R1=30
 in R2     #R2=50
 in R3     #R3=100
 in R4     #R4=30
@@ -54,7 +54,7 @@ NOP
 
 
 .ORG 300
-Add R3,R6,R6 #R6=400    
+Add R3,R6,R6 #R6=400 
 Add R1,R2,R1 #R1=80, C->0,N=0, Z=0
 ret
 INC R7           #this should not be executed
