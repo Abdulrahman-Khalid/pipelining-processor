@@ -255,7 +255,7 @@ INC: entity work.incrementor PORT MAP(CLK,RST,instruction_address,incremented_pc
 FD_d_state_address <= instruction_address(7 downto 0);
 flush_FD <= flush or clr_int_EM or DE_q_excute_signals(0) or clr_rbit_EM or DE_q_memory_signals(1) or clr_rbit;
 -- fetch buffer enable andflush signal
-FD_Enable <= not disable_fetch_buffer;
+FD_Enable <= (not disable_fetch_buffer) and (not insert_bubble );
 FD_Flush <= flush_FD or second_time_fetch_flush or not_taken_address_enable;
 fdbuff : entity work.FD_buffer PORT MAP(CLK, RST, FD_Enable, FD_Flush, FD_d_instruction, FD_q_instruction,
  	FD_d_not_taken_address, FD_q_not_taken_address, FD_d_predicted_state, FD_q_predicted_state,
