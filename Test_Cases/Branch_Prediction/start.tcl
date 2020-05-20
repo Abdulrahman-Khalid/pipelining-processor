@@ -12,17 +12,6 @@ add wave -position end sim:/main/hazards/insert_bubble
 force -freeze sim:/main/CLK 1 0, 0 {50 ns} -r 100
 force -freeze sim:/main/RST 1 0
 force -freeze sim:/main/INT 0 0
-force -freeze sim:/main/input_port_data 32'h30 0
 run 100
 force -freeze sim:/main/RST 0
-run 300
-force -freeze sim:/main/input_port_data 32'h50 0
-run 100
-force -freeze sim:/main/input_port_data 32'h100 0
-run 100
-force -freeze sim:/main/input_port_data 32'h300 0
-run 100
-force -freeze sim:/main/input_port_data 32'hFFFFFFFF 0
-run 400
-# force -freeze sim:/main/input_port_data 32'hFFFFFFFF 0
-# run 100
+run 15100
