@@ -20,4 +20,4 @@ run 300
 force -freeze sim:/main/input_port_data 32'hFFFF 0
 run 100
 force -freeze sim:/main/input_port_data 32'hF320 0
-run 300
+run 1700
