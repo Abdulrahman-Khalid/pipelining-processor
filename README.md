@@ -1,4 +1,4 @@
-# 5-Stage Pipe Lining processor
+# Stage Pipe Lining processor
 ### How To Use:
 1. Open the assembler folder 
 ``` bash
@@ -12,10 +12,12 @@ $ python run.py
 4. Choose your RAM File (if you don't have any, Generate one from options menu)
 5. Compile and run your code from Run Menu
 6. Put your RAM File outside work directory if you are using model sim it will be loaded automatically
-7. Run Main.vhd on model sim and get your program result
+7. Run main.vhd on model sim and get your program result
+
+---
 
 ### Compile and run Results:
-![](/Readme_Imgs/Success.png) 
+![](/Readme_Imgs/Success.penerate one from options mng) 
 ![](/Readme_Imgs/Failed.png) 
 
 ### Menu Options:
