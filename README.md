@@ -17,7 +17,7 @@ $ python run.py
 ---
 
 ### Compile and run Results:
-![](/Readme_Imgs/Success.penerate one from options mng) 
+![](/Readme_Imgs/Success.png) 
 ![](/Readme_Imgs/Failed.png) 
 
 ### Menu Options:
